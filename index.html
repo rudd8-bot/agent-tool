@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 에이전트 비교 도구</title>
+<style>
+:root{
+  --bg:#f7f6f2;--surface:#fff;--border:#e4e2db;
+  --text:#1c1c1a;--muted:#8a8880;--hint:#c8c6be;
+  --r:12px;--rsm:8px;
+  --blue:#185FA5;--blue-bg:#E6F1FB;
+  --green:#3B6D11;--green-bg:#EAF3DE;--green-b:#639922;
+  --purple:#3C3489;--purple-bg:#EEEDFE;--purple-b:#7F77DD;
+  --amber:#633806;--amber-bg:#FAEEDA;--amber-b:#BA7517;
+  --teal:#085041;--teal-bg:#E1F5EE;--teal-b:#1D9E75;
+  --pink:#72243E;--pink-bg:#FBEAF0;--pink-b:#D4537E;
+  --coral:#712B13;--coral-bg:#FAECE7;--coral-b:#D85A30;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-bg.hidden{display:none}
+.modal{background:var(--surface);border-radius:var(--r);padding:24px;width:100%;max-width:420px}
+.modal h2{font-size:17px;font-weight:800;margin-bottom:8px}
+.modal p{font-size:13px;color:var(--muted);line-height:1.65;margin-bottom:16px}
+.modal input{width:100%;border:1.5px solid var(--border);border-radius:var(--rsm);padding:11px 13px;font-size:14px;font-family:inherit;margin-bottom:10px;outline:none}
+.modal input:focus{border-color:var(--blue)}
+.modal-btns{display:flex;gap:8px}
+.btn-primary{flex:1;background:var(--text);color:#fff;border:none;border-radius:var(--rsm);padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-secondary{background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 16px;font-size:13px;cursor:pointer;font-family:inherit}
+
+/* HEADER */
+.hdr{background:var(--text);padding:14px 18px 12px;position:sticky;top:0;z-index:300}
+.hdr-inner{max-width:1000px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.hdr h1{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.hdr p{font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px}
+.hdr-api-btn{font-size:11px;color:rgba(255,255,255,0.5);background:none;border:1px solid rgba(255,255,255,0.2);border-radius:99px;padding:4px 11px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.hdr-api-btn:hover{color:#fff;border-color:rgba(255,255,255,0.5)}
+
+/* SEARCH */
+.search-wrap{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:52px;z-index:250}
+.search-inner{max-width:1000px;margin:0 auto}
+.search-row{display:flex;gap:8px;margin-bottom:8px}
+.search-input{flex:1;border:1.5px solid var(--border);border-radius:var(--rsm);padding:10px 13px;font-size:14px;font-family:inherit;outline:none;background:var(--bg);min-width:0}
+.search-input:focus{border-color:var(--blue);background:#fff}
+.search-btn{background:var(--text);color:#fff;border:none;border-radius:var(--rsm);padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0}
+.search-btn:disabled{opacity:.4;cursor:not-allowed}
+.mode-tags{display:flex;gap:6px;flex-wrap:wrap}
+.mode-tag{font-size:12px;padding:5px 11px;border-radius:99px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:inherit;transition:all .12s}
+.mode-tag.active{background:var(--text);color:#fff;border-color:var(--text)}
+
+/* SEARCH RESULT */
+.search-result-wrap{max-width:1000px;margin:0 auto;padding:14px 14px 0}
+.search-result{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.sr-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
+.badge-recommend{background:var(--green-bg);color:var(--green);border:1px solid var(--green-b)}
+.badge-persona{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-b)}
+.badge-free{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue)}
+.sr-content{font-size:13px;line-height:1.8;color:var(--text);white-space:pre-wrap}
+.loading-dots{display:inline-flex;gap:4px;align-items:center;padding:4px 0}
+.loading-dots span{width:7px;height:7px;background:var(--muted);border-radius:50%;animation:dot .8s infinite}
+.loading-dots span:nth-child(2){animation-delay:.15s}
+.loading-dots span:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+/* BANNER */
+.banner{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px 12px}
+.banner-inner{max-width:1000px;margin:0 auto}
+.banner-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.banner-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.triple-btn{font-size:12px;font-weight:600;padding:6px 13px;border-radius:99px;border:1.5px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:inherit}
+.triple-btn.on{background:var(--amber-bg);border-color:var(--amber-b);color:var(--amber)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:flex;align-items:center;gap:5px;padding:8px 14px;border-radius:99px;border:1.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;user-select:none;white-space:nowrap;font-family:inherit;transition:all .12s}
+.chip:hover{border-color:var(--hint);color:var(--text)}
+.chip.s1{background:var(--text);border-color:var(--text);color:#fff}
+.chip.s2{background:var(--blue-bg);border-color:var(--blue);color:var(--blue)}
+.chip.s3{background:var(--coral-bg);border-color:var(--coral-b);color:var(--coral)}
+.chip-num{width:17px;height:17px;border-radius:50%;background:currentColor;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chip-num-inner{color:#fff}
+
+/* SELBAR */
+.selbar{background:var(--bg);border-bottom:1px solid var(--border);padding:7px 16px;display:flex;align-items:center;justify-content:space-between;min-height:38px}
+.selbar-inner{max-width:1000px;margin:0 auto;width:100%;display:flex;align-items:center;justify-content:space-between}
+.selbar-info{font-size:12px;color:var(--muted)}
+.selbar-info strong{color:var(--text);font-weight:700}
+.clr-btn{font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:4px 12px;cursor:pointer;font-family:inherit}
+
+/* CONTENT */
+.content{padding:14px 14px 80px;max-width:1000px;margin:0 auto}
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-icon{font-size:44px;margin-bottom:14px}
+.empty h2{font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px}
+.empty p{font-size:13px;line-height:1.75}
+
+/* TAGS */
+.tag{display:inline-block;font-size:11px;padding:3px 10px;border-radius:99px;border:1px solid;white-space:nowrap}
+.tag-llm{background:var(--green-bg);color:var(--green);border-color:var(--green-b)}
+.tag-browser{background:var(--purple-bg);color:var(--purple);border-color:var(--purple-b)}
+.tag-code{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-b)}
+.tag-search{background:var(--teal-bg);color:var(--teal);border-color:var(--teal-b)}
+.tag-gpt{background:var(--blue-bg);color:var(--blue);border-color:var(--blue)}
+
+/* SINGLE */
+.s-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:10px}
+.s-head{padding:20px 20px 14px;border-bottom:1px solid var(--border)}
+.s-name{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
+.s-role{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:10px}
+.s-body{padding:16px 20px}
+.sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px;margin-top:18px}
+.sec-lbl:first-child{margin-top:0}
+.sw-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sw-title{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.sl,.wl{list-style:none}
+.sl li{font-size:13px;line-height:1.85}
+.sl li::before{content:"✓ ";color:var(--green)}
+.wl li{font-size:13px;line-height:1.85}
+.wl li::before{content:"✗ ";color:#A32D2D}
+.info-row{background:var(--bg);border-radius:var(--rsm);padding:9px 13px;font-size:13px;color:var(--muted);margin-top:6px;line-height:1.6}
+.info-row strong{color:var(--text);font-weight:700}
+.opinion-item{background:var(--bg);border-radius:var(--rsm);padding:10px 13px;margin-bottom:6px;font-size:13px;line-height:1.6;color:var(--muted)}
+.opinion-item strong{color:var(--text);font-weight:700;display:block;margin-bottom:2px}
+.warn-box{background:var(--amber-bg);border:1px solid var(--amber-b);border-radius:var(--rsm);padding:10px 13px;font-size:12px;color:var(--amber);margin-top:6px;line-height:1.6}
+
+/* PERSONA */
+.persona-section{background:var(--purple-bg);border:1px solid var(--purple-b);border-radius:var(--rsm);padding:14px;margin-top:6px}
+.persona-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.persona-title{font-size:12px;font-weight:700;color:var(--purple)}
+.persona-update-btn{font-size:11px;font-weight:600;background:var(--purple);color:#fff;border:none;border-radius:99px;padding:5px 13px;cursor:pointer;font-family:inherit}
+.persona-update-btn:disabled{opacity:.4;cursor:not-allowed}
+.persona-item{margin-bottom:10px}
+.persona-item-title{font-size:10px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.persona-list{list-style:none}
+.persona-list li{font-size:12px;line-height:1.85;color:#2a1f6e}
+.persona-list li::before{content:"→ "}
+.update-panel{background:var(--surface);border:1px solid var(--purple-b);border-radius:var(--rsm);padding:14px;margin-top:8px}
+.update-panel-title{font-size:12px;font-weight:700;color:var(--purple);margin-bottom:8px}
+.update-textarea{width:100%;border:1px solid var(--border);border-radius:var(--rsm);padding:10px;font-size:12px;font-family:inherit;line-height:1.65;resize:vertical;min-height:140px;outline:none}
+.update-textarea:focus{border-color:var(--purple)}
+.update-btns{display:flex;gap:8px;margin-top:8px}
+.save-btn{background:var(--purple);color:#fff;border:none;border-radius:var(--rsm);padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.cancel-btn{background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:var(--rsm);padding:9px 13px;font-size:12px;cursor:pointer;font-family:inherit}
+
+/* COMPARE */
+.cmp-header-row{display:grid;gap:4px;margin-bottom:8px}
+.cmp-header-row.c2{grid-template-columns:1fr 1fr}
+.cmp-header-row.c3{grid-template-columns:1fr 1fr 1fr}
+.cmp-grid{display:grid;gap:4px}
+.cmp-grid.c2{grid-template-columns:1fr 1fr}
+.cmp-grid.c3{grid-template-columns:1fr 1fr 1fr}
+.cmp-head-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center}
+.cmp-head-name{font-size:15px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px}
+.cmp-head-role{font-size:11px;color:var(--muted);line-height:1.4}
+.cmp-sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:12px 4px 5px;grid-column:1/-1}
+.cmp-cell{background:var(--surface);border:1px solid var(--border);padding:12px 13px;font-size:12px;line-height:1.7}
+.cmp-cell.best{background:var(--green-bg);border-color:var(--green-b)}
+.cl{list-style:none}
+.cl li{font-size:12px;line-height:1.75}
+.cl li::before{content:"✓ ";color:var(--green)}
+.wl2{list-style:none}
+.wl2 li{font-size:12px;line-height:1.75}
+.wl2 li::before{content:"✗ ";color:#A32D2D}
+.win-badge{display:inline-block;font-size:10px;font-weight:700;background:var(--green);color:#fff;padding:2px 7px;border-radius:99px;margin-bottom:6px}
+.warn-badge-sm{display:inline-block;font-size:10px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-b);padding:2px 7px;border-radius:99px;margin-bottom:4px}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  .hdr h1{font-size:15px}
+  .search-btn{padding:10px 12px;font-size:13px}
+  .chip{padding:7px 11px;font-size:12px}
+  .s-name{font-size:20px}
+  .sw-grid{grid-template-columns:1fr}
+  .cmp-header-row.c2,.cmp-header-row.c3{grid-template-columns:1fr}
+  .cmp-grid.c2,.cmp-grid.c3{grid-template-columns:1fr}
+  .cmp-head-card{text-align:left}
+  .cmp-sec-lbl{padding-top:10px}
+  .content{padding:10px 10px 80px}
+  .s-body{padding:14px 14px}
+  .s-head{padding:16px 14px 12px}
+}
+@media(max-width:400px){
+  .mode-tags{gap:4px}
+  .mode-tag{font-size:11px;padding:4px 9px}
+}
+</style>
+</head>
+<body>
+
+<!-- API MODAL -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2>Claude API 키 입력</h2>
+    <p>검색·페르소나 기능에 사용됩니다.<br>브라우저 로컬에만 저장되며 외부로 전송되지 않습니다.<br><br>언제든 헤더의 ⚙ API 키 버튼으로 변경·삭제할 수 있습니다.</p>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." />
+    <div class="modal-btns">
+      <button class="btn-primary" onclick="saveApiKey()">저장하고 시작</button>
+      <button class="btn-secondary" onclick="hideApiModal()">나중에</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-inner">
+    <div>
+      <h1>AI 에이전트 비교 도구</h1>
+      <p>검색 · 페르소나 · 모델 비교</p>
+    </div>
+    <button class="hdr-api-btn" onclick="showApiModal()">⚙ API 키</button>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="search-wrap">
+  <div class="search-inner">
+    <div class="search-row">
+      <input class="search-input" id="searchInput" placeholder="질문 입력 — 크롬 확장 만들고 싶어 / Manus 페르소나로 설계해줘 / Genspark 워크스페이스 차이가 뭐야" />
+      <button class="search-btn" id="searchBtn" onclick="doSearch()">검색</button>
+    </div>
+    <div class="mode-tags">
+      <button class="mode-tag active" id="tag-auto" onclick="setMode('auto')">자동 감지</button>
+      <button class="mode-tag" id="tag-recommend" onclick="setMode('recommend')">추천</button>
+      <button class="mode-tag" id="tag-persona" onclick="setMode('persona')">페르소나</button>
+      <button class="mode-tag" id="tag-free" onclick="setMode('free')">자유 질문</button>
+    </div>
+  </div>
+</div>
+
+<div id="searchResultArea"></div>
+
+<!-- BANNER -->
+<div class="banner">
+  <div class="banner-inner">
+    <div class="banner-top">
+      <span class="banner-label">모델 선택 (비교)</span>
+      <button class="triple-btn" id="tripleBtn" onclick="toggleTriple()">3개 비교 모드</button>
+    </div>
+    <div class="chips" id="chips"></div>
+  </div>
+</div>
+
+<div class="selbar">
+  <div class="selbar-inner">
+    <div class="selbar-info" id="selInfo">모델을 클릭해서 선택하세요</div>
+    <button class="clr-btn" onclick="clearSel()">초기화</button>
+  </div>
+</div>
+
+<div class="content" id="content">
+  <div class="empty">
+    <div class="empty-icon">🤖</div>
+    <h2>모델을 선택하거나 검색해보세요</h2>
+    <p>검색창: 자연어 질문 → 추천 + 페르소나 설계<br>배너: 모델 클릭 → 단독 상세 / 2~3개 → 비교</p>
+  </div>
+</div>
+
+<script>
+const MODELS=[
+  {id:'claude',name:'Claude',tag:'tag-llm',tagName:'범용 LLM',
+   role:'추론·구조화·뉘앙스 처리 특화 대화형 LLM',
+   identity:'긴 문서 이해, 미묘한 판단, 요구사항 명세화에 강함. 코딩 초안 품질이 GPT 대비 높다는 평가. 안전성·윤리 판단.',
+   strengths:['긴 맥락 이해·뉘앙스 판단','요구사항 명세·조건 설계','복잡한 판단 기준 수립','코딩 초안 품질 높음','안전성·윤리 판단'],
+   weaknesses:['실시간 웹 검색 기본 미탑재','브라우저 조작 불가','계산 결과 Python 검증 필요'],
+   alone:'비정형 요구사항 구조화, 조건 로직 설계, 문서 분석',
+   combo:'Perplexity(리서치) + Manus(관찰) 결과 받아 조건 로직 설계. Claude Code(실행)와 역할 분리.',
+   opinions:{'ChatGPT':'도구 생태계는 GPT가 넓지만 긴 맥락·뉘앙스·안전성은 Claude 선호.','Perplexity':'조사는 Perplexity, 구조화·판단은 Claude.','Gemini':'구글 생태계 연동은 Gemini, 복잡한 조건 판단은 Claude.','Manus':'현장 관찰은 Manus, 로직 설계 두뇌는 Claude.','Genspark':'산출물 제작은 Genspark, 비즈니스 조건 판단은 Claude 선행.','Claude Code':'Claude는 설계, Claude Code는 실행. 역할 분리.','OpenAI Operator':'브라우저 조작은 Operator, 조건 정의는 Claude.'},
+   warn:'웹 최신 정보 필요 시 검색 도구 연동 필수.',
+   persona:{approach:['비정형 요청 받으면 목적·조건·산출물 3가지 먼저 명확히','조건 모호하면 임의 진행 없이 확인 후 시작','복잡한 작업은 단계별 분해 후 각 단계 승인 받으며 진행','코드 초안 시 실행 환경·의존성 먼저 확인'],failPatterns:['최신 정보 요청 → 웹 검색 도구 연동 필요 안내','수치 계산 결과 → Python 검증 권장','브라우저 조작 요청 → Manus/Genspark 위임 제안'],decisionRules:['판단 근거 없으면 추정하지 않고 질문','실행보다 설계 먼저','산출물 형태 불명확하면 예시 제시 후 선택 요청']}},
+  {id:'chatgpt',name:'ChatGPT',tag:'tag-gpt',tagName:'도구 생태계 LLM',
+   role:'가장 넓은 플러그인·도구 생태계를 가진 대화형 LLM',
+   identity:'DALL-E, Code Interpreter, 브라우징, 플러그인 동시 연동. 사용자 수 최다로 학습 피드백 풍부.',
+   strengths:['DALL-E 이미지 생성 내장','Code Interpreter 데이터 분석','브라우징·플러그인 동시 연동','광범위한 도구 체인','사용자 피드백 가장 풍부'],
+   weaknesses:['긴 맥락 이해는 Claude 대비 약함','창의적 글쓰기·뉘앙스는 Claude 선호','도구 선택 부담'],
+   alone:'이미지+코드+분석을 한 대화에서 처리. OpenAI 생태계 중심 작업.',
+   combo:'Claude(텍스트·뉘앙스) + ChatGPT(이미지 생성·데이터 분석).',
+   opinions:{'Claude':'도구 생태계는 GPT 최대. 긴 맥락·뉘앙스는 Claude 선호.','Perplexity':'깊은 리서치는 Perplexity, 결과 가공·이미지는 GPT.','Gemini':'구글 연동은 Gemini, OpenAI 생태계는 GPT.','Manus':'웹 관찰은 Manus, 결과물 가공·이미지는 GPT.','Genspark':'슬라이드 산출은 Genspark, 이미지 포함 콘텐츠는 GPT.','Claude Code':'빠른 스크립트는 GPT Code Interpreter, 코드 품질은 Claude Code.','OpenAI Operator':'같은 생태계. Operator가 웹 실행, GPT가 판단·생성.'},
+   warn:'활성화 도구가 많을수록 응답 품질 저하 가능. 필요한 도구만 활성화 권장.',
+   persona:{approach:['도구 체인 먼저 파악 — 이미지/코드/검색 중 무엇 필요한지','Code Interpreter로 분석 시 파일 형식 먼저 확인','이미지 생성 시 스타일·해상도·용도 명확히'],failPatterns:['긴 맥락 유지 실패 → 핵심 요약 후 재시작','도구 충돌 → 필요한 도구만 선택적 활성화'],decisionRules:['이미지 필요하면 DALL-E 즉시 활용','데이터 파일 있으면 Code Interpreter 우선','브라우징은 최신 정보 필요할 때만']}},
+  {id:'perplexity',name:'Perplexity',tag:'tag-search',tagName:'리서치 엔진',
+   role:'출처 달린 실시간 검색·보고서 합성 엔진',
+   identity:'수십 개 출처를 동시에 읽고 인용 포함 보고서 합성. 단순 검색과 달리 교차 검증 자동 수행.',
+   strengths:['수십 개 출처 동시 검색·합성','출처 기반 보고서 자동 생성','시장·기술·경쟁사 비교','최신 정보 실시간 팩트체크','Pro Search 심층 분석'],
+   weaknesses:['사이트 직접 조작 불가','코드 실행 불가','장기 맥락 유지 약함'],
+   alone:'경쟁사 분석, 기술 동향 조사, API 문서 찾기',
+   combo:'Claude가 조사 범위 설계 → Perplexity 수집 → Claude 보고서 구조화.',
+   opinions:{'Claude':'조사는 Perplexity, 구조화·판단은 Claude.','ChatGPT':'GPT는 단발 작업, 깊은 리서치는 Perplexity.','Gemini':'출처 속도는 Perplexity, 구글 연동은 Gemini.','Manus':'자료 수집은 Perplexity, 웹 검증은 Manus.','Genspark':'근거 수집은 Perplexity, 슬라이드는 Genspark.','Claude Code':'최신 라이브러리 확인은 Perplexity, 구현은 Claude Code.','OpenAI Operator':'리서치는 Perplexity, 웹 실행은 Operator.'},
+   warn:'출처 있어도 오래된 자료 포함 가능. 중요 수치는 원문 확인 권장.',
+   persona:{approach:['질문 받으면 신뢰도 높은 출처 우선 선별','여러 출처 교차 검증 후 결론 제시','수치·날짜는 반드시 출처 명시'],failPatterns:['출처 없는 정보 → 불확실성 명시','오래된 자료만 → 날짜 명시 후 최신 확인 권고'],decisionRules:['출처 2개 이상 일치하면 신뢰','단일 출처 수치는 주의 표시','실시간 데이터는 날짜 명시']}},
+  {id:'gemini',name:'Gemini',tag:'tag-llm',tagName:'구글 생태계 LLM',
+   role:'구글 생태계 연동이 가장 강한 LLM',
+   identity:'Gmail·Docs·Sheets·Drive 직접 접근. Gemini Deep Research로 긴 조사 보고서 생성.',
+   strengths:['Gmail·Docs·Sheets·Drive 직접 연동','Deep Research 장문 조사 보고서','멀티모달 처리','구글 워크스페이스 중심'],
+   weaknesses:['구글 생태계 밖에서 약함','브라우저 직접 조작 불가','뉘앙스·창의 글쓰기는 Claude 선호'],
+   alone:'구글 워크스페이스 기반 업무, 긴 시장조사 보고서',
+   combo:'Perplexity(외부 리서치) + Gemini(구글 문서 정리·슬라이드).',
+   opinions:{'Claude':'구글 연동은 Gemini, 복잡한 조건 판단은 Claude.','ChatGPT':'구글 서비스 연동은 Gemini, OpenAI 생태계는 GPT.','Perplexity':'외부 조사는 Perplexity, 구글 내부 정리는 Gemini.','Manus':'웹 관찰은 Manus, 구글 워크스페이스 정리는 Gemini.','Genspark':'구글 Slides 연동은 Gemini 우위.','Claude Code':'구글 스크립트 자동화는 Gemini, 코드 품질은 Claude Code.','OpenAI Operator':'구글 서비스 내 작업은 Gemini, 외부 웹 실행은 Operator.'},
+   warn:'구글 계정 연동 필수. 구글 생태계 밖은 다른 도구 조합 필요.',
+   persona:{approach:['구글 계정 연동 상태 먼저 확인','Gmail·Drive·Docs 직접 접근 가능 여부 파악','Deep Research는 긴 조사 보고서에만 사용'],failPatterns:['구글 계정 미연동 → 연동 안내','구글 외부 서비스 → 다른 도구 위임'],decisionRules:['구글 서비스 관련이면 직접 접근 우선','외부 자료 필요시 Perplexity 조합']}},
+  {id:'manus',name:'Manus',tag:'tag-browser',tagName:'브라우저 에이전트',
+   role:'클라우드 브라우저가 작업장인 현장 파견 요원',
+   identity:'실제 웹사이트 DOM을 직접 보고 클릭·스크롤·추출. 다른 에이전트는 HTML 구조를 추정만 함.',
+   strengths:['웹사이트 DOM 직접 관찰·클릭·추출','다단계 웹 자동화','로그인 세션 작업','빠른 프로토타입 생성','클라우드 가상 환경 안전 실행'],
+   weaknesses:['코드 품질·유지보수 약함','복잡한 SPA에서 실패 가능','로컬 파일시스템 접근 제한'],
+   alone:'사이트 DOM 관찰 후 크롬 확장 프로토타입, 웹 데이터 추출',
+   combo:'Claude(조건 설계) → Manus(프로토타입) → Claude Code(완성도).',
+   opinions:{'Claude':'현장 관찰은 Manus, 로직 설계 두뇌는 Claude.','ChatGPT':'웹 관찰은 Manus, 결과물 가공은 GPT.','Perplexity':'자료 수집은 Perplexity, 웹 검증은 Manus.','Gemini':'웹 관찰은 Manus, 구글 정리는 Gemini.','Genspark':'둘 다 브라우저. Manus는 자율 실행, Genspark는 산출물 다양.','Claude Code':'Manus 관찰+초안 → Claude Code 품질 완성. 최적 조합.','OpenAI Operator':'둘 다 브라우저 실행형. Manus는 자율도 높음.'},
+   warn:'결제·계약·고객 발송은 자동 최종 실행 금지. 사람 승인 필수.',
+   persona:{approach:['작업 받으면 대상 URL 먼저 확인','브라우저 열고 페이지 구조·로그인 여부 파악','정적/동적 페이지 구분 후 추출 전략 결정','초안 빠르게 만들고 실제 페이지에서 즉시 검증'],failPatterns:['SPA 무한스크롤 → MutationObserver 대응','로그인 세션 만료 → 사용자 재로그인 요청','동적 클래스명 → 구조적 선택자로 우회','3회 실패 → Claude Code에 넘기기'],decisionRules:['로그인 필요하면 사용자 승인 먼저','결제 단계 → 무조건 멈추고 사람 takeover','코드 품질보다 빠른 동작 확인 우선']}},
+  {id:'genspark',name:'Genspark',tag:'tag-browser',tagName:'AI 브라우저·올인원',
+   role:'브라우저 탐색부터 슬라이드·문서·코드 산출까지 올인원',
+   identity:'브라우저가 작업장이면서 문서·슬라이드·코드를 동시 산출. Autopilot Mode 다단계 자동화.',
+   strengths:['탭 간 맥락·현재 페이지 자동화','슬라이드·문서·코드 동시 산출','Autopilot Mode','멀티탭 비교 후 초안 생성','올인원 워크스페이스'],
+   weaknesses:['코드베이스 유지보수 약함','복잡한 비즈니스 조건은 Claude 선행 필요','깊은 리팩터링은 Claude Code'],
+   alone:'웹 관찰 + 발표자료·문서 산출까지 한 번에',
+   combo:'Claude(판단·조건) + Genspark(산출물) + Claude Code(코드 품질).',
+   opinions:{'Claude':'산출물 생성은 Genspark, 비즈니스 조건 판단은 Claude 선행.','ChatGPT':'슬라이드 산출은 Genspark, 이미지 포함은 GPT.','Perplexity':'근거 수집은 Perplexity, 슬라이드는 Genspark.','Gemini':'슬라이드 산출은 Genspark도 가능. 구글 Slides 연동은 Gemini.','Manus':'둘 다 브라우저. Genspark는 산출물 종류 가장 다양.','Claude Code':'프로토타입은 Genspark, 완성도·유지보수는 Claude Code.','OpenAI Operator':'Genspark는 산출물 강함, Operator는 반복 웹 업무 강함.'},
+   warn:'비즈니스 조건 복잡할 경우 판단 오류 가능. 조건 설계는 Claude 선행 권장.',
+   persona:{approach:['요청 받으면 산출물 형태 먼저 확인 (슬라이드/문서/코드)','멀티탭 비교 필요 시 탭 간 맥락 자동 연결','Autopilot 모드는 반복 웹 작업에만 활성화'],failPatterns:['복잡한 조건 판단 → Claude에 위임','코드 유지보수 요청 → Claude Code로 전환'],decisionRules:['산출물 형태 명확하면 바로 생성 시작','조건 복잡하면 Claude 선행 요청','웹 관찰 + 산출물 동시 필요 시 단독 처리']}},
+  {id:'operator',name:'OpenAI Operator',tag:'tag-gpt',tagName:'GPT 브라우저 에이전트',
+   role:'GPT-4o 추론과 브라우저 조작이 결합된 에이전트',
+   identity:'GPT 모델 기반 브라우저 조작. OpenAI 도구 생태계와 통합.',
+   strengths:['GPT-4o 추론 + 브라우저 조작 결합','폼 작성·반복 웹 업무','DALL-E·Code Interpreter 연동','OpenAI 생태계 통합'],
+   weaknesses:['구글·Anthropic 생태계 연동 약함','민감 정보·결제는 사용자 승인 필수','로컬 환경 접근 제한'],
+   alone:'폼 입력, 반복 브라우저 작업, 주문·예약 보조',
+   combo:'Perplexity(조사) → Operator(웹 실행) → 사용자 승인.',
+   opinions:{'Claude':'브라우저 조작은 Operator, 조건 판단은 Claude.','ChatGPT':'같은 생태계. Operator가 웹 실행, GPT가 판단·생성.','Perplexity':'리서치는 Perplexity, 웹 실행은 Operator.','Gemini':'구글 서비스는 Gemini, 외부 웹 실행은 Operator.','Manus':'둘 다 브라우저. Operator는 GPT 연동 강함.','Genspark':'Operator는 반복 웹 업무, Genspark는 산출물 제작.','Claude Code':'코드 작성은 Claude Code, 웹 폼 실행은 Operator.'},
+   warn:'결제·계약·최종 제출은 사용자 takeover 필수.',
+   persona:{approach:['폼 입력·예약 등 반복 웹 작업 먼저 파악','GPT 추론으로 입력값 검증 후 실행','민감 단계 도달 전 사용자에게 확인'],failPatterns:['민감 정보 요청 → 사용자 takeover','구글 서비스 → Gemini 위임'],decisionRules:['반복 웹 작업은 자동화','결제·계약은 무조건 멈춤','GPT 도구 체인 활용 우선']}},
+  {id:'claudecode',name:'Claude Code',tag:'tag-code',tagName:'코딩 에이전트',
+   role:'터미널·코드베이스가 작업장인 수석 소프트웨어 엔지니어',
+   identity:'코드베이스 전체를 읽고 여러 파일 동시 수정, 테스트 실행, 오류 확인 루프를 혼자 돌림.',
+   strengths:['멀티파일 동시 수정','테스트 실행·오류 확인 루프 자율 진행','Git/PR 수준 품질','코드 설명 없이 바로 실행','기존 코드 리팩터링'],
+   weaknesses:['실제 브라우저 UI 확인 불가','초기 DOM 추정 오류 가능','초보자 세팅 부담'],
+   alone:'기존 코드베이스 버그 수정, Python 스크립트, API 서버 개발',
+   combo:'Manus(사이트 관찰·초안) → Claude Code(코드 품질 완성·테스트).',
+   opinions:{'Claude':'Claude는 설계, Claude Code는 실행. 역할 분리.','ChatGPT':'코드 품질은 Claude Code, 빠른 스크립트는 GPT.','Perplexity':'최신 라이브러리 확인은 Perplexity, 구현은 Claude Code.','Gemini':'구글 스크립트는 Gemini, 코드 품질은 Claude Code.','Manus':'Manus 초안 → Claude Code 완성. 최적 조합.','Genspark':'프로토타입은 Genspark, 완성도는 Claude Code.','OpenAI Operator':'코드 작성은 Claude Code, 웹 폼은 Operator.'},
+   warn:'브라우저 결과 확인 필요 시 스크린샷 직접 제공 필요.',
+   persona:{approach:['코드베이스 전체 구조 먼저 파악','수정 전 관련 파일 의존성 확인','테스트 코드 먼저 작성 후 구현','오류 발생 시 로그 기반으로 원인 추적'],failPatterns:['브라우저 UI 확인 필요 → 스크린샷 요청','DOM 구조 불명확 → Manus에 관찰 위임','초기 세팅 복잡 → 단계별 가이드 제공'],decisionRules:['테스트 없으면 완료 아님','멀티파일 수정 시 의존성 순서 준수','실행 결과 확인 후 다음 단계']}},
+];
+
+const modelMap={};
+MODELS.forEach(m=>{modelMap[m.id]=m});
+
+let apiKey=localStorage.getItem('claudeApiKey')||'';
+let searchMode='auto';
+let selected=[];
+let tripleMode=false;
+
+function init(){
+  if(!apiKey) showApiModal();
+  renderChips();
+  renderSelBar();
+  document.getElementById('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch()});
+}
+
+function showApiModal(){document.getElementById('modalBg').classList.remove('hidden')}
+function hideApiModal(){document.getElementById('modalBg').classList.add('hidden')}
+
+function saveApiKey(){
+  const v=document.getElementById('apiKeyInput').value.trim();
+  if(!v){alert('API 키를 입력해주세요');return}
+  apiKey=v;
+  localStorage.setItem('claudeApiKey',v);
+  hideApiModal();
+}
+
+function setMode(m){
+  searchMode=m;
+  ['auto','recommend','persona','free'].forEach(id=>{
+    document.getElementById('tag-'+id).classList.toggle('active',id===m);
+  });
+}
+
+function detectMode(q){
+  if(searchMode!=='auto') return searchMode;
+  const lq=q.toLowerCase();
+  if(['페르소나','가정하자','처럼 생각','입장에서','라면 어떻게','관점으로'].some(k=>lq.includes(k))) return 'persona';
+  if(['추천','어떤 도구','만들고 싶어','하고 싶어','자동화','구현','개발','어떤 에이전트'].some(k=>lq.includes(k))) return 'recommend';
+  return 'free';
+}
+
+async function doSearch(){
+  const q=document.getElementById('searchInput').value.trim();
+  if(!q) return;
+  if(!apiKey){showApiModal();return}
+  const btn=document.getElementById('searchBtn');
+  btn.disabled=true; btn.textContent='검색 중...';
+  const area=document.getElementById('searchResultArea');
+  area.innerHTML=`<div class="search-result-wrap"><div class="search-result"><div class="loading-dots"><span></span><span></span><span></span></div></div></div>`;
+  const mode=detectMode(q);
+  const modelSummary=MODELS.map(m=>`[${m.name}] 유형:${m.tagName} 강점:${m.strengths.slice(0,3).join(',')} 약점:${m.weaknesses.slice(0,2).join(',')} 단독:${m.alone} 조합:${m.combo}`).join('\n');
+  let systemPrompt='';
+  if(mode==='recommend'){
+    systemPrompt=`당신은 AI 에이전트 전문가입니다. 등록된 에이전트 데이터를 기반으로 사용자 질문에 가장 적합한 도구 조합을 추천하세요.\n\n등록 에이전트:\n${modelSummary}\n\n답변 형식:\n1. 추천 조합 (에이전트명 → 에이전트명)\n2. 각 에이전트 역할 (2-3줄)\n3. 주의사항 (있으면)\n4. 등록 에이전트 외 추가 고려 도구 (있으면 "추가 제안:" 으로 구분)\n\n한국어로 답변.`;
+  } else if(mode==='persona'){
+    const match=MODELS.find(m=>q.includes(m.name));
+    if(match){
+      const p=match.persona;
+      const override=getPersonaOverride(match.id);
+      const personaData=override?`(업데이트된 페르소나)\n${override}`:`접근순서: ${p.approach.join(' / ')}\n실패패턴: ${p.failPatterns.join(' / ')}\n판단기준: ${p.decisionRules.join(' / ')}`;
+      systemPrompt=`당신은 지금부터 ${match.name} 에이전트입니다.\n\n정체성: ${match.identity}\n${personaData}\n강점: ${match.strengths.join(', ')}\n약점: ${match.weaknesses.join(', ')}\n\n이 페르소나를 유지하며 사용자 작업 요청에 대해 ${match.name}이라면 어떻게 접근하고 설계할지 구체적으로 답변하세요. 실행 한계는 솔직하게 표시하세요.\n\n한국어로 답변.`;
+    } else {
+      systemPrompt=`당신은 AI 에이전트 전문가입니다. 사용자가 요청한 에이전트 페르소나로 작업을 설계해주세요.\n\n등록 에이전트 데이터:\n${modelSummary}\n\n한국어로 답변.`;
+    }
+  } else {
+    systemPrompt=`당신은 AI 에이전트 전문가입니다. 사용자 질문에 정확하고 유용하게 답변하세요.\n\n참고 에이전트 데이터:\n${modelSummary}\n\n한국어로 답변.`;
+  }
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:systemPrompt,messages:[{role:'user',content:q}]})
+    });
+    const data=await res.json();
+    if(data.error) throw new Error(data.error.message);
+    const answer=data.content[0].text;
+    const badgeClass=mode==='recommend'?'badge-recommend':mode==='persona'?'badge-persona':'badge-free';
+    const badgeText=mode==='recommend'?'추천 모드':mode==='persona'?'페르소나 모드':'자유 질문';
+    if(mode==='recommend'){
+      const mentioned=MODELS.filter(m=>answer.includes(m.name));
+      if(mentioned.length>=2){selected=mentioned.slice(0,2).map(m=>m.id);renderChips();renderSelBar();renderContent();}
+    }
+    area.innerHTML=`<div class="search-result-wrap"><div class="search-result"><span class="sr-badge ${badgeClass}">${badgeText}</span><div class="sr-content">${answer}</div></div></div>`;
+  } catch(e){
+    area.innerHTML=`<div class="search-result-wrap"><div class="search-result"><div style="color:#A32D2D;font-size:13px">오류: ${e.message}</div></div></div>`;
+  }
+  btn.disabled=false; btn.textContent='검색';
+}
+
+async function updatePersona(modelId){
+  if(!apiKey){showApiModal();return}
+  const m=modelMap[modelId];
+  const btn=document.getElementById('pub-'+modelId);
+  btn.disabled=true; btn.textContent='수집 중...';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:`AI 에이전트 "${m.name}"의 실제 작업 방식을 페르소나 데이터로 정리해줘.\n\n아래 3가지를 각 3-4개 항목으로:\n1. 작업 접근 순서\n2. 실패 패턴과 대응\n3. 판단 기준\n\n현재:\n접근순서: ${m.persona.approach.join(' / ')}\n실패패턴: ${m.persona.failPatterns.join(' / ')}\n판단기준: ${m.persona.decisionRules.join(' / ')}\n\n개선된 버전을 한국어로.`}]})
+    });
+    const data=await res.json();
+    if(data.error) throw new Error(data.error.message);
+    const answer=data.content[0].text;
+    const panelId='upanel-'+modelId;
+    document.getElementById(panelId)?.remove();
+    const section=document.getElementById('psec-'+modelId);
+    const panel=document.createElement('div');
+    panel.className='update-panel'; panel.id=panelId;
+    panel.innerHTML=`<div class="update-panel-title">Claude 제안 — 검토 후 저장하세요</div><textarea class="update-textarea" id="utext-${modelId}">${answer}</textarea><div class="update-btns"><button class="save-btn" onclick="savePersona('${modelId}')">저장</button><button class="cancel-btn" onclick="document.getElementById('${panelId}').remove()">취소</button></div>`;
+    section.appendChild(panel);
+  } catch(e){alert('오류: '+e.message)}
+  btn.disabled=false; btn.textContent='업데이트';
+}
+
+function savePersona(modelId){
+  const text=document.getElementById('utext-'+modelId).value;
+  const stored=JSON.parse(localStorage.getItem('personaOverrides')||'{}');
+  stored[modelId]=text;
+  localStorage.setItem('personaOverrides',JSON.stringify(stored));
+  document.getElementById('upanel-'+modelId)?.remove();
+  renderContent();
+  alert('저장 완료. 다음 페르소나 질문부터 반영됩니다.');
+}
+
+function getPersonaOverride(modelId){
+  const stored=JSON.parse(localStorage.getItem('personaOverrides')||'{}');
+  return stored[modelId]||null;
+}
+
+function renderChips(){
+  const wrap=document.getElementById('chips'); wrap.innerHTML='';
+  MODELS.forEach(m=>{
+    const idx=selected.indexOf(m.id);
+    const btn=document.createElement('button');
+    btn.className='chip'+(idx===0?' s1':idx===1?' s2':idx===2?' s3':'');
+    const num=idx>=0?`<div class="chip-num"><span class="chip-num-inner">${idx+1}</span></div>`:'';
+    btn.innerHTML=num+m.name;
+    btn.onclick=()=>selectModel(m.id);
+    wrap.appendChild(btn);
+  });
+}
+
+function selectModel(id){
+  const idx=selected.indexOf(id);
+  if(idx>=0){selected.splice(idx,1)}
+  else{selected.push(id);if(selected.length>(tripleMode?3:2))selected.shift()}
+  renderChips();renderSelBar();renderContent();
+}
+
+function toggleTriple(){
+  tripleMode=!tripleMode;
+  const btn=document.getElementById('tripleBtn');
+  btn.classList.toggle('on',tripleMode);
+  btn.textContent=tripleMode?'3개 비교 ON ✓':'3개 비교 모드';
+  if(!tripleMode&&selected.length>2)selected=selected.slice(-2);
+  renderChips();renderSelBar();renderContent();
+}
+
+function clearSel(){selected=[];renderChips();renderSelBar();renderContent()}
+
+function renderSelBar(){
+  const el=document.getElementById('selInfo');
+  if(!selected.length){el.innerHTML='모델을 클릭해서 선택하세요';return}
+  if(selected.length===1){el.innerHTML=`<strong>${modelMap[selected[0]].name}</strong> 단독 보기`;return}
+  el.innerHTML=selected.map(id=>`<strong>${modelMap[id].name}</strong>`).join(' vs ')+' 비교 중';
+}
+
+function renderContent(){
+  const el=document.getElementById('content');
+  if(!selected.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🤖</div><h2>모델을 선택하거나 검색해보세요</h2><p>검색창: 자연어 질문 → 추천 + 페르소나 설계<br>배너: 모델 클릭 → 단독 상세 / 2~3개 → 비교</p></div>`;
+    return;
+  }
+  if(selected.length===1)el.innerHTML=renderSingle(modelMap[selected[0]]);
+  else el.innerHTML=renderCompare(selected.map(id=>modelMap[id]));
+}
+
+function renderSingle(m){
+  const override=getPersonaOverride(m.id);
+  const personaBody=override
+    ?`<div style="font-size:12px;line-height:1.85;color:#2a1f6e;white-space:pre-wrap">${override}</div>`
+    :`<div class="persona-item"><div class="persona-item-title">작업 접근 순서</div><ul class="persona-list">${m.persona.approach.map(a=>`<li>${a}</li>`).join('')}</ul></div>
+     <div class="persona-item"><div class="persona-item-title">실패 패턴 & 대응</div><ul class="persona-list">${m.persona.failPatterns.map(f=>`<li>${f}</li>`).join('')}</ul></div>
+     <div class="persona-item" style="margin-bottom:0"><div class="persona-item-title">판단 기준</div><ul class="persona-list">${m.persona.decisionRules.map(d=>`<li>${d}</li>`).join('')}</ul></div>`;
+  const ops=Object.entries(m.opinions).map(([k,v])=>`<div class="opinion-item"><strong>${k}</strong>${v}</div>`).join('');
+  return `<div><div class="s-card">
+    <div class="s-head"><div class="s-name">${m.name}</div><div class="s-role">${m.role}</div><span class="tag ${m.tag}">${m.tagName}</span></div>
+    <div class="s-body">
+      <div class="sec-lbl">정체성</div>
+      <div style="font-size:13px;line-height:1.7;color:#444">${m.identity}</div>
+      <div class="sec-lbl">강점 vs 약점</div>
+      <div class="sw-grid">
+        <div><div class="sw-title">강점</div><ul class="sl">${m.strengths.map(s=>`<li>${s}</li>`).join('')}</ul></div>
+        <div><div class="sw-title">약점</div><ul class="wl">${m.weaknesses.map(w=>`<li>${w}</li>`).join('')}</ul></div>
+      </div>
+      <div class="sec-lbl">사용 상황</div>
+      <div class="info-row"><strong>혼자:</strong> ${m.alone}</div>
+      <div class="info-row"><strong>조합:</strong> ${m.combo}</div>
+      ${m.warn?`<div class="warn-box">⚠️ ${m.warn}</div>`:''}
+      <div class="sec-lbl">페르소나 데이터</div>
+      <div class="persona-section" id="psec-${m.id}">
+        <div class="persona-header"><span class="persona-title">🎭 ${m.name} 페르소나</span><button class="persona-update-btn" id="pub-${m.id}" onclick="updatePersona('${m.id}')">업데이트</button></div>
+        ${personaBody}
+      </div>
+      <div class="sec-lbl">다른 모델들의 시각</div>
+      ${ops}
+    </div>
+  </div></div>`;
+}
+
+function renderCompare(models){
+  const n=models.length, cls=`c${n}`;
+  const sW=models.map(m=>m.strengths.length), sWin=sW.indexOf(Math.max(...sW));
+  const wW=models.map(m=>m.weaknesses.length), wWin=wW.indexOf(Math.min(...wW));
+  const heads=`<div class="cmp-header-row ${cls}">${models.map(m=>`<div class="cmp-head-card"><div class="cmp-head-name">${m.name}</div><div class="cmp-head-role">${m.role.substring(0,40)}…</div><span class="tag ${m.tag}" style="margin-top:6px;display:inline-block">${m.tagName}</span></div>`).join('')}</div>`;
+  const strRows=`<div class="cmp-sec-lbl">강점</div>${models.map((m,i)=>`<div class="cmp-cell ${i===sWin?'best':''}">${i===sWin?'<div class="win-badge">강점 우위</div>':''}<ul class="cl">${m.strengths.map(s=>`<li>${s}</li>`).join('')}</ul></div>`).join('')}`;
+  const weakRows=`<div class="cmp-sec-lbl">약점</div>${models.map((m,i)=>`<div class="cmp-cell ${i===wWin?'best':''}">${i===wWin?'<div class="win-badge">약점 적음</div>':''}<ul class="wl2">${m.weaknesses.map(w=>`<li>${w}</li>`).join('')}</ul></div>`).join('')}`;
+  const aloneRows=`<div class="cmp-sec-lbl">단독 사용</div>${models.map(m=>`<div class="cmp-cell"><div style="font-size:12px;line-height:1.7">${m.alone}</div></div>`).join('')}`;
+  const comboRows=`<div class="cmp-sec-lbl">조합 상황</div>${models.map(m=>`<div class="cmp-cell"><div style="font-size:12px;line-height:1.7">${m.combo}</div></div>`).join('')}`;
+  const warnRows=models.some(m=>m.warn)?`<div class="cmp-sec-lbl">유의사항</div>${models.map(m=>`<div class="cmp-cell">${m.warn?`<div class="warn-badge-sm">⚠️ 주의</div><div style="font-size:12px;line-height:1.6;margin-top:4px">${m.warn}</div>`:'<span style="color:var(--hint);font-size:12px">-</span>'}</div>`).join('')}`:'';
+  let opRows='';
+  if(n===2){const[a,b]=models;opRows=`<div class="cmp-sec-lbl">상호 평가</div><div class="cmp-cell"><strong style="font-size:11px;color:var(--muted)">${a.name} → ${b.name}</strong><div style="font-size:12px;line-height:1.7;margin-top:4px">${a.opinions[b.name]||'-'}</div></div><div class="cmp-cell"><strong style="font-size:11px;color:var(--muted)">${b.name} → ${a.name}</strong><div style="font-size:12px;line-height:1.7;margin-top:4px">${b.opinions[a.name]||'-'}</div></div>`;}
+  return `${heads}<div class="cmp-grid ${cls}">${strRows}${weakRows}${aloneRows}${comboRows}${warnRows}${opRows}</div>`;
+}
+
+init();
+</script>
+</body>
+</html>
