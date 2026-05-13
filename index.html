@@ -206,6 +206,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕
 .win-badge{display:inline-block;font-size:10px;font-weight:700;background:var(--green);color:#fff;padding:2px 7px;border-radius:99px;margin-bottom:6px}
 .warn-badge-sm{display:inline-block;font-size:10px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-b);padding:2px 7px;border-radius:99px;margin-bottom:4px}
 
+/* CONFIRM BUBBLE */
+.confirm-bubble{background:var(--surface);border:1.5px solid var(--blue);border-radius:var(--r);padding:14px 16px;margin:0 14px 12px;max-width:1000px;margin-left:auto;margin-right:auto}
+.confirm-bubble-inner{max-width:1000px;margin:0 auto;padding:0 14px}
+.confirm-text{font-size:14px;line-height:1.7;color:var(--text);margin-bottom:12px}
+.confirm-text strong{color:var(--blue)}
+.confirm-btns{display:flex;gap:8px}
+.confirm-yes{background:var(--text);color:#fff;border:none;border-radius:var(--rsm);padding:9px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.confirm-yes:hover{opacity:.85}
+.confirm-no{background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:var(--rsm);padding:9px 16px;font-size:14px;cursor:pointer;font-family:inherit}
+.confirm-no:hover{color:var(--text);border-color:var(--hint)}
+
 /* RESPONSIVE */
 @media(max-width:600px){
   .hdr h1{font-size:15px}
@@ -276,6 +287,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕
   </div>
 </div>
 
+<div id="confirmArea"></div>
 <div id="searchResultArea"></div>
 
 <!-- BANNER -->
@@ -494,11 +506,70 @@ function renderHistory(){
   });
 }
 
+// ── RETRY INPUT ──
+function retryInput(){
+  document.getElementById('confirmArea').innerHTML='';
+  document.getElementById('searchResultArea').innerHTML='';
+  const input=document.getElementById('searchInput');
+  input.focus();
+  input.select();
+}
+
 // ── SEARCH ──
 async function doSearch(){
   const q=document.getElementById('searchInput').value.trim();
   if(!q) return;
   if(!apiKey){showApiModal();return}
+
+  const btn=document.getElementById('searchBtn');
+  btn.disabled=true; btn.textContent='확인 중...';
+  const confirmArea=document.getElementById('confirmArea');
+  const area=document.getElementById('searchResultArea');
+  confirmArea.innerHTML='';
+  area.innerHTML='';
+
+  // 1단계: 이해 확인 버블
+  try{
+    const confirmRes=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:150,messages:[{role:'user',content:`사용자가 해결하고 싶은 문제를 설명했어. 이해한 내용을 한국어로 1~2문장으로 요약해줘.
+규칙: 반드시 "이렇게 이해했어요: "로 시작. 무엇을→어떻게→결과 순서. 해결 방법·기술 추천·질문 절대 금지. 사용자가 말한 내용만. 쉬운 말로.
+
+사용자 입력:
+${q}`}]})
+    });
+    const confirmData=await confirmRes.json();
+    if(confirmData.error) throw new Error(confirmData.error.message);
+    const summary=confirmData.content[0].text.trim();
+
+    btn.disabled=false; btn.textContent='검색';
+
+    confirmArea.innerHTML=`<div class="confirm-bubble-inner" style="padding-top:12px">
+      <div class="confirm-bubble">
+        <div class="confirm-text"><strong>🤖 Claude</strong><br>${summary}</div>
+        <div class="confirm-btns">
+          <button class="confirm-yes" onclick="proceedSearch()">맞아 →</button>
+          <button class="confirm-no" onclick="retryInput()">아니야, 다시 입력</button>
+        </div>
+      </div>
+    </div>`;
+    lastQuery=q;
+    return;
+  } catch(e){
+    // 확인 실패 시 바로 검색 진행
+    btn.disabled=false; btn.textContent='검색';
+    proceedSearch();
+    return;
+  }
+}
+
+async function proceedSearch(){
+  const q=lastQuery||document.getElementById('searchInput').value.trim();
+  if(!q) return;
+  if(!apiKey){showApiModal();return}
+
+  document.getElementById('confirmArea').innerHTML='';
   const btn=document.getElementById('searchBtn');
   btn.disabled=true; btn.textContent='검색 중...';
   const area=document.getElementById('searchResultArea');
