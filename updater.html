@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Updater</title>
+<style>
+  :root {
+    --bg:#f7f6f2;--surface:#fff;--border:#e4e2db;
+    --text:#1c1c1a;--muted:#8a8880;--hint:#c8c6be;
+    --r:12px;--rsm:8px;
+    --blue:#185FA5;--blue-bg:#E6F1FB;
+    --green:#3B6D11;--green-bg:#EAF3DE;--green-b:#639922;
+    --amber:#633806;--amber-bg:#FAEEDA;--amber-b:#BA7517;
+    --red:#7A1F1F;--red-bg:#FDEAEA;--red-b:#D94F4F;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+  .hdr{background:var(--text);padding:14px 18px 12px;position:sticky;top:0;z-index:300}
+  .hdr h1{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.3px}
+  .hdr p{font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px}
+
+  .container{max-width:720px;margin:0 auto;padding:16px}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px}
+  .card-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .card-title .dot{width:7px;height:7px;border-radius:50%;background:var(--blue);flex-shrink:0}
+
+  .info-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .info-label{font-size:12px;color:var(--muted)}
+  .info-val{font-size:12px;font-weight:600;color:var(--text)}
+
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600}
+  .badge-official{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue)}
+  .badge-benchmark{background:var(--green-bg);color:var(--green);border:1px solid var(--green-b)}
+  .badge-community{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-b)}
+  .badge-high{background:var(--green-bg);color:var(--green);border:1px solid var(--green-b)}
+  .badge-low{background:var(--red-bg);color:var(--red);border:1px solid var(--red-b)}
+  .badge-approved{background:var(--green-bg);color:var(--green);border:1px solid var(--green-b)}
+  .badge-pending{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-b)}
+
+  .agent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:12px}
+  .agent-chip{padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--rsm);cursor:pointer;transition:all .12s;background:var(--bg)}
+  .agent-chip:hover{border-color:var(--blue);background:var(--blue-bg)}
+  .agent-chip.selected{border-color:var(--blue);background:var(--blue-bg)}
+  .agent-chip .name{font-size:13px;font-weight:700}
+  .agent-chip .meta{font-size:11px;color:var(--muted);margin-top:2px}
+
+  .query-mode{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .mode-btn{font-size:12px;padding:5px 12px;border-radius:99px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:inherit;transition:all .12s}
+  .mode-btn.active{background:var(--text);color:#fff;border-color:var(--text)}
+
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:var(--rsm);border:none;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;transition:all .15s}
+  .btn-primary{background:var(--text);color:#fff}
+  .btn-primary:hover{opacity:.85}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed}
+  .btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+  .btn-secondary:hover{border-color:var(--hint)}
+  .btn-green{background:#3B6D11;color:#fff}
+  .btn-green:hover{opacity:.85}
+  .btn-green:disabled{opacity:.4;cursor:not-allowed}
+
+  .progress-wrap{display:none;margin:12px 0}
+  .progress-wrap.show{display:block}
+  .progress-bar{height:4px;background:var(--border);border-radius:99px;overflow:hidden;margin-bottom:6px}
+  .progress-fill{height:100%;background:var(--blue);border-radius:99px;transition:width .3s;width:0%}
+  .progress-msg{font-size:12px;color:var(--muted)}
+
+  .log-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--rsm);padding:12px;max-height:160px;overflow-y:auto;margin-top:8px;display:none}
+  .log-wrap.show{display:block}
+  .log-line{font-size:11px;color:var(--muted);line-height:1.8;font-family:monospace}
+  .log-line.ok{color:var(--green)}
+  .log-line.warn{color:var(--amber)}
+  .log-line.err{color:var(--red)}
+
+  .result-section{display:none}
+  .result-section.show{display:block}
+
+  .result-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .result-tab{padding:8px 16px;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit}
+  .result-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+
+  .result-panel{display:none}
+  .result-panel.active{display:block}
+
+  .update-item{border:1px solid var(--border);border-radius:var(--rsm);padding:12px;margin-bottom:8px;background:var(--surface)}
+  .update-item .agent-name{font-size:13px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .update-item .field-row{display:flex;gap:6px;align-items:flex-start;margin-bottom:4px}
+  .update-item .field-key{font-size:11px;color:var(--muted);min-width:90px;flex-shrink:0;padding-top:1px}
+  .update-item .field-val{font-size:12px;color:var(--text);line-height:1.6}
+  .update-item .field-val.new{color:var(--green);font-weight:600}
+  .update-item .field-val.removed{color:var(--red);text-decoration:line-through}
+  .update-item .actions{display:flex;gap:6px;margin-top:8px}
+
+  .apply-btn{font-size:12px;padding:5px 12px;border-radius:var(--rsm);border:1px solid var(--green-b);background:var(--green-bg);color:var(--green);cursor:pointer;font-weight:600;font-family:inherit}
+  .apply-btn:hover{background:#d4ecbb}
+  .skip-btn{font-size:12px;padding:5px 12px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:inherit}
+  .skip-btn:hover{border-color:var(--hint)}
+
+  .json-out{background:var(--bg);border:1px solid var(--border);border-radius:var(--rsm);padding:12px;font-size:11px;font-family:monospace;white-space:pre-wrap;max-height:300px;overflow-y:auto;color:var(--text);line-height:1.6}
+
+  .empty-state{text-align:center;padding:32px;color:var(--muted);font-size:13px}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:8px 18px;border-radius:99px;font-size:12px;font-weight:600;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.show{opacity:1}
+
+  .section-sep{height:1px;background:var(--border);margin:16px 0}
+
+  .status-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--rsm);background:var(--blue-bg);border:1px solid var(--blue);margin-bottom:12px;display:none}
+  .status-bar.show{display:flex}
+  .status-bar .msg{font-size:12px;color:var(--blue);font-weight:600}
+  .spinner{width:14px;height:14px;border:2px solid rgba(24,95,165,.2);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>🔄 Agent Updater</h1>
+  <p>에이전트 비교 도구 데이터 업데이트 — Claude 웹 검색 기반</p>
+</div>
+
+<div class="container">
+
+  <!-- 현재 데이터 상태 -->
+  <div class="card" id="statusCard">
+    <div class="card-title"><span class="dot"></span>현재 models.json 상태</div>
+    <div id="statusContent"><div class="empty-state">데이터 불러오는 중...</div></div>
+  </div>
+
+  <!-- 업데이트 설정 -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>업데이트 범위 설정</div>
+
+    <div style="margin-bottom:10px">
+      <div class="info-label" style="margin-bottom:6px">검색 방향</div>
+      <div class="query-mode">
+        <button class="mode-btn active" data-mode="both" onclick="setMode(this)">전체 (작업별 + 에이전트별)</button>
+        <button class="mode-btn" data-mode="task" onclick="setMode(this)">작업별 비교</button>
+        <button class="mode-btn" data-mode="agent" onclick="setMode(this)">에이전트별 업데이트</button>
+        <button class="mode-btn" data-mode="new" onclick="setMode(this)">신규 에이전트 탐지</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div class="info-label" style="margin-bottom:6px">에이전트 선택 (전체 또는 개별)</div>
+      <div class="agent-grid" id="agentGrid"></div>
+    </div>
+
+    <div class="status-bar" id="runningBar">
+      <div class="spinner"></div>
+      <div class="msg" id="runningMsg">Claude가 최신 정보 검색 중...</div>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-msg" id="progressMsg">준비 중...</div>
+    </div>
+
+    <div class="log-wrap" id="logWrap"></div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+      <button class="btn btn-primary" id="runBtn" onclick="runUpdate()">
+        <span>🔍</span> 지금 검색 & 분석
+      </button>
+      <button class="btn btn-secondary" onclick="selectAll()">전체 선택</button>
+      <button class="btn btn-secondary" onclick="selectNone()">선택 해제</button>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="result-section" id="resultSection">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>업데이트 후보</div>
+
+      <div class="result-tabs">
+        <button class="result-tab active" onclick="switchTab('approved')">✅ 반영 가능 (<span id="approvedCount">0</span>)</button>
+        <button class="result-tab" onclick="switchTab('pending')">⏳ 검토 필요 (<span id="pendingCount">0</span>)</button>
+        <button class="result-tab" onclick="switchTab('new')">🆕 신규 에이전트 (<span id="newCount">0</span>)</button>
+        <button class="result-tab" onclick="switchTab('json')">📋 JSON 미리보기</button>
+      </div>
+
+      <div class="result-panel active" id="panel-approved"></div>
+      <div class="result-panel" id="panel-pending"></div>
+      <div class="result-panel" id="panel-new"></div>
+      <div class="result-panel" id="panel-json"></div>
+
+      <div class="section-sep"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-green" id="applyAllBtn" onclick="applyAll()" disabled>
+          <span>✅</span> 전체 approved 반영
+        </button>
+        <button class="btn btn-secondary" onclick="downloadJson()">
+          <span>⬇️</span> JSON 다운로드
+        </button>
+        <button class="btn btn-secondary" onclick="copyJson()">
+          <span>📋</span> JSON 복사
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── 상태 ───────────────────────────────────────────
+let currentMode = 'both';
+let selectedAgents = new Set();
+let currentModels = null;
+let updateCandidates = { approved: [], pending: [], new_agents: [] };
+let finalJson = null;
+
+// ─── 초기화 ─────────────────────────────────────────
+async function init() {
+  await loadModels();
+}
+
+async function loadModels() {
+  try {
+    const res = await fetch('/api/models');
+    if (!res.ok) throw new Error('API 오류');
+    const data = await res.json();
+    currentModels = Array.isArray(data) ? data : (data.agents || []);
+    renderStatus(data);
+    renderAgentGrid();
+    selectAll();
+  } catch (e) {
+    document.getElementById('statusContent').innerHTML =
+      `<div class="empty-state" style="color:#D94F4F">models.json 불러오기 실패: ${e.message}<br><small>Vercel 배포 환경에서 실행해주세요</small></div>`;
+  }
+}
+
+function renderStatus(data) {
+  const agents = Array.isArray(data) ? data : (data.agents || []);
+  const version = data.version || '-';
+  const updated = data.last_updated || '-';
+  const note = data.update_note || '';
+
+  const hasSchema = agents[0] && 'source_tier' in agents[0];
+
+  document.getElementById('statusContent').innerHTML = `
+    <div class="info-row"><span class="info-label">버전</span><span class="info-val">v${version}</span></div>
+    <div class="info-row"><span class="info-label">마지막 업데이트</span><span class="info-val">${updated}</span></div>
+    <div class="info-row"><span class="info-label">에이전트 수</span><span class="info-val">${agents.length}개</span></div>
+    <div class="info-row"><span class="info-label">스키마 v2.1</span><span class="info-val">${hasSchema ? '✅ 적용됨' : '⚠️ 구버전'}</span></div>
+    ${note ? `<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6">${note}</div>` : ''}
+  `;
+}
+
+function renderAgentGrid() {
+  const grid = document.getElementById('agentGrid');
+  grid.innerHTML = currentModels.map(m => `
+    <div class="agent-chip selected" data-id="${m.id}" onclick="toggleAgent('${m.id}', this)">
+      <div class="name">${m.name}</div>
+      <div class="meta">${m.tagName || ''}</div>
+    </div>
+  `).join('');
+  currentModels.forEach(m => selectedAgents.add(m.id));
+}
+
+// ─── 선택 제어 ───────────────────────────────────────
+function toggleAgent(id, el) {
+  if (selectedAgents.has(id)) { selectedAgents.delete(id); el.classList.remove('selected'); }
+  else { selectedAgents.add(id); el.classList.add('selected'); }
+}
+function selectAll() {
+  currentModels.forEach(m => selectedAgents.add(m.id));
+  document.querySelectorAll('.agent-chip').forEach(el => el.classList.add('selected'));
+}
+function selectNone() {
+  selectedAgents.clear();
+  document.querySelectorAll('.agent-chip').forEach(el => el.classList.remove('selected'));
+}
+function setMode(el) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  currentMode = el.dataset.mode;
+}
+
+// ─── 쿼리 생성 ───────────────────────────────────────
+function buildQueries() {
+  const agents = currentModels.filter(m => selectedAgents.has(m.id));
+  const queries = [];
+
+  if (currentMode === 'both' || currentMode === 'agent') {
+    agents.forEach(a => {
+      queries.push(`${a.name} AI agent new capabilities limitations 2026`);
+      queries.push(`${a.name} agent real world failure cases user reports 2026`);
+    });
+  }
+
+  if (currentMode === 'both' || currentMode === 'task') {
+    queries.push('best AI agent for coding debugging Claude Code Cursor GPT 2026');
+    queries.push('best AI agent for browser automation Manus Operator Gemini 2026');
+    queries.push('best AI agent for research Perplexity Genspark ChatGPT 2026');
+    queries.push('best AI agent for slide document generation 2026');
+    queries.push('AI agent SWE-bench WebArena GAIA benchmark results 2026');
+  }
+
+  if (currentMode === 'both' || currentMode === 'new') {
+    queries.push('new AI agent released 2026 autonomous capabilities comparison');
+    queries.push('emerging AI agent 2026 not Claude not GPT not Gemini');
+  }
+
+  return queries;
+}
+
+// ─── 업데이트 실행 ───────────────────────────────────
+async function runUpdate() {
+  if (selectedAgents.size === 0) { showToast('에이전트를 선택해주세요'); return; }
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+
+  const progressWrap = document.getElementById('progressWrap');
+  const progressFill = document.getElementById('progressFill');
+  const progressMsg = document.getElementById('progressMsg');
+  const logWrap = document.getElementById('logWrap');
+  const runningBar = document.getElementById('runningBar');
+  const runningMsg = document.getElementById('runningMsg');
+
+  progressWrap.classList.add('show');
+  logWrap.classList.add('show');
+  runningBar.classList.add('show');
+  logWrap.innerHTML = '';
+
+  const queries = buildQueries();
+  addLog(`검색 쿼리 ${queries.length}개 생성됨`, 'ok');
+
+  setProgress(10, `Claude에 검색 요청 중...`);
+  runningMsg.textContent = 'Claude가 최신 AI 에이전트 정보 검색 중...';
+
+  try {
+    const agentList = currentModels.filter(m => selectedAgents.has(m.id));
+    const prompt = buildPrompt(agentList, queries);
+
+    addLog('Claude API 호출 중...', '');
+    const result = await callClaude(prompt);
+    addLog('응답 수신 완료', 'ok');
+
+    setProgress(80, '결과 파싱 중...');
+    const parsed = parseResult(result);
+    updateCandidates = parsed;
+
+    setProgress(100, '완료');
+    runningBar.classList.remove('show');
+
+    renderResults();
+    document.getElementById('resultSection').classList.add('show');
+    addLog(`approved: ${parsed.approved.length}개, pending: ${parsed.pending.length}개, 신규: ${parsed.new_agents.length}개`, 'ok');
+
+  } catch (e) {
+    addLog(`오류: ${e.message}`, 'err');
+    runningBar.classList.remove('show');
+    showToast('오류 발생: ' + e.message);
+  }
+
+  btn.disabled = false;
+}
+
+function buildPrompt(agents, queries) {
+  const today = new Date().toISOString().slice(0,10);
+  const agentSummary = agents.map(a =>
+    `- ${a.name} (id: ${a.id}): 현재 strengths=[${(a.strengths||[]).join(', ')}], weaknesses=[${(a.weaknesses||[]).join(', ')}]`
+  ).join('\n');
+
+  return `오늘 날짜: ${today}
+당신은 AI 에이전트 비교 데이터베이스 업데이트 전문가입니다.
+
+아래 검색 쿼리들로 웹을 검색하고, 각 AI 에이전트의 최신 정보를 수집하세요.
+
+검색 쿼리:
+${queries.map((q,i) => `${i+1}. ${q}`).join('\n')}
+
+현재 등록된 에이전트:
+${agentSummary}
+
+수집 후 다음 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만 출력:
+
+{
+  "approved": [
+    {
+      "agent_id": "에이전트 id",
+      "agent_name": "에이전트 이름",
+      "changes": {
+        "new_capabilities": ["새로 확인된 기능1", "새로 확인된 기능2"],
+        "new_limitations": ["새로 확인된 한계1"],
+        "updated_best_for": ["작업1", "작업2"],
+        "updated_avoid_for": ["피해야 할 작업1"]
+      },
+      "source_tier": "official | benchmark | community",
+      "confidence": "high",
+      "evidence": ["https://..."],
+      "reason": "변경 이유 한 문장"
+    }
+  ],
+  "pending": [
+    {
+      "agent_id": "에이전트 id",
+      "agent_name": "에이전트 이름",
+      "changes": {},
+      "source_tier": "community",
+      "confidence": "low",
+      "evidence": [],
+      "reason": "단일 커뮤니티 사례, 추가 검증 필요"
+    }
+  ],
+  "new_agents": [
+    {
+      "name": "새 에이전트 이름",
+      "summary": "한 줄 설명",
+      "best_for": ["잘하는 작업"],
+      "source": "https://...",
+      "reason": "추가 고려 이유"
+    }
+  ]
+}
+
+규칙:
+- official + benchmark 출처 → approved
+- community 반복 확인 → approved  
+- community 단일 사례 → pending
+- marketing 블로그 → 무시
+- 변경사항이 없으면 해당 에이전트는 결과에 포함하지 마세요`;
+}
+
+async function callClaude(prompt) {
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  const textBlock = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+  return textBlock;
+}
+
+function parseResult(text) {
+  try {
+    const clean = text.replace(/```json|```/g, '').trim();
+    const start = clean.indexOf('{');
+    const end = clean.lastIndexOf('}') + 1;
+    const jsonStr = clean.slice(start, end);
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    addLog('JSON 파싱 실패, 빈 결과 반환', 'warn');
+    return { approved: [], pending: [], new_agents: [] };
+  }
+}
+
+// ─── 결과 렌더링 ─────────────────────────────────────
+function renderResults() {
+  const { approved, pending, new_agents } = updateCandidates;
+
+  document.getElementById('approvedCount').textContent = approved.length;
+  document.getElementById('pendingCount').textContent = pending.length;
+  document.getElementById('newCount').textContent = new_agents.length;
+
+  // approved 패널
+  document.getElementById('panel-approved').innerHTML = approved.length === 0
+    ? '<div class="empty-state">업데이트 가능한 항목 없음</div>'
+    : approved.map((item, i) => renderUpdateItem(item, i, 'approved')).join('');
+
+  // pending 패널
+  document.getElementById('panel-pending').innerHTML = pending.length === 0
+    ? '<div class="empty-state">검토 필요 항목 없음</div>'
+    : pending.map((item, i) => renderUpdateItem(item, i, 'pending')).join('');
+
+  // new 패널
+  document.getElementById('panel-new').innerHTML = new_agents.length === 0
+    ? '<div class="empty-state">신규 에이전트 없음</div>'
+    : new_agents.map(a => `
+      <div class="update-item">
+        <div class="agent-name">🆕 ${a.name}</div>
+        <div class="field-row"><span class="field-key">한 줄 설명</span><span class="field-val">${a.summary}</span></div>
+        <div class="field-row"><span class="field-key">잘하는 작업</span><span class="field-val">${(a.best_for||[]).join(', ')}</span></div>
+        <div class="field-row"><span class="field-key">출처</span><span class="field-val"><a href="${a.source}" target="_blank" style="color:var(--blue)">${a.source}</a></span></div>
+        <div class="field-row"><span class="field-key">추가 이유</span><span class="field-val">${a.reason}</span></div>
+      </div>
+    `).join('');
+
+  // JSON 미리보기
+  buildFinalJson();
+  document.getElementById('panel-json').innerHTML =
+    `<div class="json-out">${escHtml(JSON.stringify(finalJson, null, 2))}</div>`;
+
+  document.getElementById('applyAllBtn').disabled = approved.length === 0;
+}
+
+function renderUpdateItem(item, i, type) {
+  const ch = item.changes || {};
+  const rows = [
+    ['신규 기능', ch.new_capabilities],
+    ['신규 한계', ch.new_limitations],
+    ['잘하는 작업', ch.updated_best_for],
+    ['피해야 할 작업', ch.updated_avoid_for],
+  ].filter(([,v]) => v && v.length > 0);
+
+  return `
+    <div class="update-item" id="item-${type}-${i}">
+      <div class="agent-name">
+        ${item.agent_name}
+        <span class="badge badge-${item.source_tier}">${item.source_tier}</span>
+        <span class="badge badge-${item.confidence}">${item.confidence}</span>
+      </div>
+      ${rows.map(([k,v]) => `
+        <div class="field-row">
+          <span class="field-key">${k}</span>
+          <span class="field-val new">${v.join(' / ')}</span>
+        </div>
+      `).join('')}
+      <div class="field-row"><span class="field-key">이유</span><span class="field-val">${item.reason}</span></div>
+      ${item.evidence && item.evidence.length ? `<div class="field-row"><span class="field-key">출처</span><span class="field-val">${item.evidence.map(e=>`<a href="${e}" target="_blank" style="color:var(--blue);font-size:11px">${e.slice(0,50)}...</a>`).join('<br>')}</span></div>` : ''}
+      <div class="actions">
+        ${type === 'pending' ? `<button class="apply-btn" onclick="promoteItem(${i})">✅ approved로 승격</button>` : ''}
+        <button class="skip-btn" onclick="skipItem('${type}', ${i})">건너뛰기</button>
+      </div>
+    </div>
+  `;
+}
+
+// ─── 항목 제어 ───────────────────────────────────────
+function promoteItem(i) {
+  const item = updateCandidates.pending[i];
+  item.confidence = 'high';
+  updateCandidates.approved.push(item);
+  updateCandidates.pending.splice(i, 1);
+  renderResults();
+  switchTab('approved');
+  showToast(`${item.agent_name} → approved 승격`);
+}
+
+function skipItem(type, i) {
+  if (type === 'approved') updateCandidates.approved.splice(i, 1);
+  else updateCandidates.pending.splice(i, 1);
+  renderResults();
+}
+
+// ─── JSON 빌드 & 적용 ────────────────────────────────
+function buildFinalJson() {
+  if (!currentModels) return;
+
+  const today = new Date().toISOString().slice(0,10);
+  const updatedAgents = currentModels.map(agent => {
+    const update = updateCandidates.approved.find(u => u.agent_id === agent.id);
+    if (!update) return agent;
+
+    const ch = update.changes || {};
+    const updated = { ...agent };
+
+    if (ch.new_capabilities && ch.new_capabilities.length) {
+      updated.strengths = [...(agent.strengths || []), ...ch.new_capabilities];
+    }
+    if (ch.new_limitations && ch.new_limitations.length) {
+      updated.weaknesses = [...(agent.weaknesses || []), ...ch.new_limitations];
+    }
+    if (ch.updated_best_for && ch.updated_best_for.length) {
+      updated.best_for = ch.updated_best_for;
+    }
+    if (ch.updated_avoid_for && ch.updated_avoid_for.length) {
+      updated.avoid_for = ch.updated_avoid_for;
+    }
+
+    updated.source_tier = update.source_tier;
+    updated.confidence = update.confidence;
+    updated.evidence = [...(agent.evidence || []), ...(update.evidence || [])];
+    updated.review_status = 'approved';
+    updated.last_updated = today;
+
+    return updated;
+  });
+
+  finalJson = {
+    version: '2.1',
+    last_updated: today,
+    update_note: `${today} 자동 업데이트: ${updateCandidates.approved.length}개 에이전트 반영`,
+    agents: updatedAgents
+  };
+}
+
+function applyAll() {
+  buildFinalJson();
+  document.getElementById('panel-json').innerHTML =
+    `<div class="json-out">${escHtml(JSON.stringify(finalJson, null, 2))}</div>`;
+  switchTab('json');
+  showToast('JSON 준비 완료 — 다운로드 또는 복사 후 GitHub에 업로드하세요');
+  document.getElementById('applyAllBtn').disabled = true;
+}
+
+function downloadJson() {
+  if (!finalJson) { buildFinalJson(); }
+  const blob = new Blob([JSON.stringify(finalJson, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'models.json'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('models.json 다운로드 완료');
+}
+
+function copyJson() {
+  if (!finalJson) { buildFinalJson(); }
+  navigator.clipboard.writeText(JSON.stringify(finalJson, null, 2))
+    .then(() => showToast('JSON 복사 완료'))
+    .catch(() => showToast('복사 실패'));
+}
+
+// ─── 탭 제어 ─────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.result-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.result-panel').forEach(p => p.classList.remove('active'));
+  const tabs = ['approved','pending','new','json'];
+  const idx = tabs.indexOf(name);
+  document.querySelectorAll('.result-tab')[idx].classList.add('active');
+  document.getElementById(`panel-${name}`).classList.add('active');
+}
+
+// ─── 유틸 ────────────────────────────────────────────
+function setProgress(pct, msg) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressMsg').textContent = msg;
+}
+
+function addLog(msg, type) {
+  const wrap = document.getElementById('logWrap');
+  const line = document.createElement('div');
+  line.className = `log-line ${type}`;
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  wrap.appendChild(line);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── 시작 ─────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
