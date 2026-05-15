@@ -236,6 +236,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕
 <div class="hdr">
   <div class="hdr-inner">
     <div><h1>AI 에이전트 비교 도구</h1><p>검색 · 페르소나 · 모델 비교</p></div>
+    <a href="/updater.html" style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);text-decoration:none;border:1px solid rgba(255,255,255,0.25);padding:5px 11px;border-radius:99px;white-space:nowrap">🔄 업데이터</a>
   </div>
 </div>
 
@@ -328,7 +329,8 @@ async function init() {
   try {
     const res = await fetch('/api/models');
     if (!res.ok) throw new Error('models.json 로드 실패');
-    MODELS = await res.json();
+    const data = await res.json();
+    MODELS = Array.isArray(data) ? data : (data.agents || []);
     MODELS.forEach(m => { modelMap[m.id] = m; });
   } catch (e) {
     document.getElementById('appLoading').innerHTML =
