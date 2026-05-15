@@ -120,6 +120,12 @@
   <h1>🔄 Agent Updater</h1>
   <p>에이전트 비교 도구 데이터 업데이트 — Claude 웹 검색 기반</p>
 </div>
+<div id="secretPanel" style="background:#1c1c1a;padding:10px 18px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+  <span style="font-size:12px;color:rgba(255,255,255,0.5)">🔑 접근 코드</span>
+  <input id="secretInput" type="password" placeholder="접근 코드 입력..." style="flex:1;max-width:260px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:6px 10px;color:#fff;font-size:13px;outline:none">
+  <button onclick="saveSecret()" style="padding:6px 14px;background:#185FA5;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">저장</button>
+  <span id="secretStatus" style="font-size:11px;color:rgba(255,255,255,0.4)"></span>
+</div>
 
 <div class="container">
 
@@ -427,10 +433,27 @@ ${agentSummary}
 - 변경사항이 없으면 해당 에이전트는 결과에 포함하지 마세요`;
 }
 
+function getSecret() { return sessionStorage.getItem('app_secret') || ''; }
+
+function saveSecret() {
+  const v = document.getElementById('secretInput').value.trim();
+  if (!v) { showToast('접근 코드를 입력하세요'); return; }
+  sessionStorage.setItem('app_secret', v);
+  document.getElementById('secretInput').value = '';
+  document.getElementById('secretStatus').textContent = '✅ 저장됨';
+  showToast('접근 코드 저장됨');
+}
+
+function checkSecretOnLoad() {
+  if (getSecret()) {
+    document.getElementById('secretStatus').textContent = '✅ 코드 있음';
+  }
+}
+
 async function callClaude(prompt) {
   const res = await fetch('/api/chat', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-app-secret': getSecret() },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 4000,
@@ -653,6 +676,7 @@ function escHtml(s) {
 }
 
 // ─── 시작 ─────────────────────────────────────────────
+checkSecretOnLoad();
 init();
 </script>
 </body>
