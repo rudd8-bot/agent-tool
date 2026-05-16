@@ -254,7 +254,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕
   <div class="search-inner">
     <div class="search-input-wrap">
       <textarea class="search-input" id="searchInput" rows="1"
-        placeholder="질문 입력 — 클릭하면 확장됩니다. 정리 안 된 현업 내용도 그대로 붙여넣기 가능"
+        placeholder="질문 입력 — 클릭하면 확장됩니다. 정리 안 된 현업 내용도 그대로 붙여넣기 가능&#10;&#10;【도구 선택 프레임워크】&#10;나는 [문제 설명]을 해결해야 한다. 이 문제를 Claude / Manus / Python / ChatGPT / RAG 중 어떤 도구 조합으로 처리해야 하는가? 각 도구의 역할, 입력값, 출력값, 실행 순서를 명시해줘. 실패 조건과 대안도 포함해줘. 결과를 판단 기준표 형태로 출력해줘."
         onfocus="expandSearch()" oninput="autoResize(this)"></textarea>
       <div class="search-input-actions">
         <button class="clear-btn" onclick="clearSearch()" title="지우기">✕</button>
@@ -651,6 +651,7 @@ async function summarizeHistory(modelId) {
 async function analyzeTask(modelId) {
   if (!lastQuery) { alert('먼저 검색창에 작업 내용을 입력하고 검색해주세요.'); return; }
   const m = modelMap[modelId];
+  if (!m) { alert('모델 데이터를 찾을 수 없습니다. 페이지를 새로고침해주세요.\n(오류 ID: ' + modelId + ')'); return; }
   const btn = document.getElementById('ta-btn-' + modelId);
   btn.disabled = true; btn.textContent = '분석 중...';
   const taResult = document.getElementById('ta-result-' + modelId);
@@ -813,8 +814,8 @@ function clearSel() { selected = []; renderChips(); renderSelBar(); renderConten
 function renderSelBar() {
   const el = document.getElementById('selInfo');
   if (!selected.length) { el.innerHTML = '모델을 클릭해서 선택하세요'; return; }
-  if (selected.length === 1) { el.innerHTML = `<strong>${modelMap[selected[0]].name}</strong> 단독 보기`; return; }
-  el.innerHTML = selected.map(id => `<strong>${modelMap[id].name}</strong>`).join(' vs ') + ' 비교 중';
+  if (selected.length === 1) { const _m = modelMap[selected[0]]; el.innerHTML = `<strong>${_m ? _m.name : selected[0]}</strong> 단독 보기`; return; }
+  el.innerHTML = selected.map(id => { const _m = modelMap[id]; return `<strong>${_m ? _m.name : id}</strong>`; }).join(' vs ') + ' 비교 중';
 }
 
 // ── CONTENT ──
@@ -824,8 +825,8 @@ function renderContent() {
     el.innerHTML = `<div class="empty"><div class="empty-icon">🤖</div><h2>모델을 선택하거나 검색해보세요</h2><p>검색창: 자연어 질문 → 추천 + 페르소나 설계<br>배너: 모델 클릭 → 단독 상세 / 2~3개 → 비교<br><br>검색 후 모델 클릭 → 해당 모델 작업 적합도 분석</p></div>`;
     return;
   }
-  if (selected.length === 1) el.innerHTML = renderSingle(modelMap[selected[0]]);
-  else el.innerHTML = renderCompare(selected.map(id => modelMap[id]));
+  if (selected.length === 1) { const _m = modelMap[selected[0]]; if (_m) el.innerHTML = renderSingle(_m); else { selected = []; renderChips(); renderSelBar(); renderContent(); } return; }
+  el.innerHTML = renderCompare(selected.map(id => modelMap[id]).filter(Boolean));
 }
 
 function renderSingle(m) {
