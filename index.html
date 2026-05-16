@@ -310,12 +310,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕
 </div>
 
 <script>
+// ── HTML 이스케이프 ──
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+}
+
 // ── APP SECRET ──
 function getSecret() { return sessionStorage.getItem('app_secret') || ''; }
 function saveSecret() {
   var v = document.getElementById('secretInput').value.trim();
   if (!v) return;
   sessionStorage.setItem('app_secret', v);
+  document.getElementById('secretInput').value = '';
   document.getElementById('secretPanel').style.display = 'none';
   alert('저장됐어요! 탭을 닫으면 자동으로 삭제됩니다.');
 }
@@ -480,7 +486,7 @@ ${q}`
     btn.disabled = false; btn.textContent = '검색';
     confirmArea.innerHTML = `<div class="confirm-bubble-inner" style="padding-top:12px">
       <div class="confirm-bubble">
-        <div class="confirm-text"><strong>🤖 Claude</strong><br>${summary}</div>
+        <div class="confirm-text"><strong>🤖 Claude</strong><br>${escHtml(summary)}</div>
         <div class="confirm-btns">
           <button class="confirm-yes" onclick="proceedSearch()">맞아 →</button>
           <button class="confirm-no" onclick="retryInput()">아니야, 다시 입력</button>
@@ -546,14 +552,14 @@ async function proceedSearch() {
     saveHistory(q);
     area.innerHTML = `<div class="search-result-wrap"><div class="search-result">
       <span class="sr-badge ${badgeClass}">${badgeText}</span>
-      <div class="sr-content">${answer}</div>
+      <div class="sr-content">${escHtml(answer)}</div>
       <div class="sr-actions">
         <button class="sr-action-btn blue" onclick="copyToClaude()">📋 Claude에서 계속하기</button>
         <button class="sr-action-btn" onclick="clearSearch();document.getElementById('searchResultArea').innerHTML=''">✕ 닫기</button>
       </div>
     </div></div>`;
   } catch (e) {
-    area.innerHTML = `<div class="search-result-wrap"><div class="search-result"><div style="color:#A32D2D;font-size:13px">오류: ${e.message}</div></div></div>`;
+    area.innerHTML = `<div class="search-result-wrap"><div class="search-result"><div style="color:#A32D2D;font-size:13px">오류: ${escHtml(e.message)}</div></div></div>`;
   }
   btn.disabled = false; btn.textContent = '검색';
 }
@@ -673,13 +679,13 @@ async function analyzeTask(modelId) {
     const historyBadge = newCount > 1
       ? `<div style="font-size:11px;color:var(--teal);background:var(--teal-bg);border:1px solid var(--teal-b);border-radius:99px;padding:2px 9px;display:inline-block;margin-bottom:8px">📊 ${newCount}회 누적 이력 반영됨</div>`
       : '<div style="font-size:11px;color:var(--hint);margin-bottom:8px">첫 번째 분석 — 이력이 쌓일수록 정확해집니다</div>';
-    taResult.innerHTML = `${historyBadge}<div class="ta-result">${answer}</div>`;
+    taResult.innerHTML = `${historyBadge}<div class="ta-result">${escHtml(answer)}</div>`;
     taActions.innerHTML = `
       <button class="ta-action-btn ta-btn-persona" onclick="copyPersonaToClaude('${modelId}', \`${answer.replace(/`/g, "'")}\`)">🎭 ${m.name} 페르소나로 Claude에서 이어가기</button>
       <button class="ta-action-btn ta-btn-claude" onclick="copyToClaude()">📋 Claude에서 계속하기</button>
       <button class="ta-action-btn" onclick="showHistory('${modelId}')" style="font-size:11px">📂 이력 보기 (${newCount}개)</button>`;
   } catch (e) {
-    taResult.innerHTML = `<div style="color:#A32D2D;font-size:13px">오류: ${e.message}</div>`;
+    taResult.innerHTML = `<div style="color:#A32D2D;font-size:13px">오류: ${escHtml(e.message)}</div>`;
   }
   btn.disabled = false; btn.textContent = '이 작업 분석';
 }
@@ -718,10 +724,10 @@ function showHistory(modelId) {
       <div style="background:#f7f6f2;border-radius:8px;padding:12px;margin-bottom:6px;font-size:12px">
         <div style="display:flex;justify-content:space-between;margin-bottom:5px">
           <strong style="color:#1c1c1a">${i + 1}번째</strong>
-          <span style="color:#8a8880">${item.date}</span>
+          <span style="color:#8a8880">${escHtml(item.date)}</span>
         </div>
-        <div style="color:#5f5e5a;margin-bottom:3px"><strong>작업:</strong> ${item.query}</div>
-        <div style="color:#8a8880;line-height:1.6">${item.result}</div>
+        <div style="color:#5f5e5a;margin-bottom:3px"><strong>작업:</strong> ${escHtml(item.query)}</div>
+        <div style="color:#8a8880;line-height:1.6">${escHtml(item.result)}</div>
       </div>`).join('')}
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
       <button onclick="clearHistory('${modelId}');this.closest('div[style*=fixed]').remove()" style="font-size:12px;color:#A32D2D;background:none;border:1px solid #A32D2D;border-radius:8px;padding:6px 14px;cursor:pointer">이력 전체 삭제</button>
@@ -845,7 +851,7 @@ function renderSingle(m) {
         <span class="ta-title">🔍 작업 적합도 분석</span>
         <button class="ta-btn" id="ta-btn-${m.id}" onclick="analyzeTask('${m.id}')">이 작업 분석</button>
       </div>
-      <div class="ta-query"><strong>분석할 작업:</strong>${lastQuery.length > 100 ? lastQuery.substring(0, 100) + '...' : lastQuery}</div>
+      <div class="ta-query"><strong>분석할 작업:</strong>${escHtml(lastQuery.length > 100 ? lastQuery.substring(0, 100) + '...' : lastQuery)}</div>
       <div id="ta-result-${m.id}"></div>
       <div id="ta-actions-${m.id}" class="ta-actions"></div>
     </div>` : '';

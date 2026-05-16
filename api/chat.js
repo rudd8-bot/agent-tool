@@ -29,6 +29,7 @@ export default async function handler(req, res) {
     if (!anthropicRes.ok) return res.status(anthropicRes.status).json(data);
     return res.status(200).json(data);
   } catch (err) {
-    return res.status(500).json({ error: 'Proxy request failed', detail: err.message });
+    console.error('chat proxy error:', err.message);
+    return res.status(500).json({ error: 'Proxy request failed' });
   }
 }

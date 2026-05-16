@@ -508,11 +508,11 @@ function renderResults() {
     ? '<div class="empty-state">신규 에이전트 없음</div>'
     : new_agents.map(a => `
       <div class="update-item">
-        <div class="agent-name">🆕 ${a.name}</div>
-        <div class="field-row"><span class="field-key">한 줄 설명</span><span class="field-val">${a.summary}</span></div>
-        <div class="field-row"><span class="field-key">잘하는 작업</span><span class="field-val">${(a.best_for||[]).join(', ')}</span></div>
-        <div class="field-row"><span class="field-key">출처</span><span class="field-val"><a href="${a.source}" target="_blank" style="color:var(--blue)">${a.source}</a></span></div>
-        <div class="field-row"><span class="field-key">추가 이유</span><span class="field-val">${a.reason}</span></div>
+        <div class="agent-name">🆕 ${escHtml(a.name)}</div>
+        <div class="field-row"><span class="field-key">한 줄 설명</span><span class="field-val">${escHtml(a.summary)}</span></div>
+        <div class="field-row"><span class="field-key">잘하는 작업</span><span class="field-val">${escHtml((a.best_for||[]).join(', '))}</span></div>
+        <div class="field-row"><span class="field-key">출처</span><span class="field-val"><a href="${safeUrl(a.source)}" target="_blank" rel="noopener noreferrer" style="color:var(--blue)">${escHtml(a.source)}</a></span></div>
+        <div class="field-row"><span class="field-key">추가 이유</span><span class="field-val">${escHtml(a.reason)}</span></div>
       </div>
     `).join('');
 
@@ -533,21 +533,23 @@ function renderUpdateItem(item, i, type) {
     ['피해야 할 작업', ch.updated_avoid_for],
   ].filter(([,v]) => v && v.length > 0);
 
+  const safeTier = ['official','benchmark','community'].includes(item.source_tier) ? item.source_tier : 'community';
+  const safeConf = ['high','low'].includes(item.confidence) ? item.confidence : 'low';
   return `
     <div class="update-item" id="item-${type}-${i}">
       <div class="agent-name">
-        ${item.agent_name}
-        <span class="badge badge-${item.source_tier}">${item.source_tier}</span>
-        <span class="badge badge-${item.confidence}">${item.confidence}</span>
+        ${escHtml(item.agent_name)}
+        <span class="badge badge-${safeTier}">${escHtml(item.source_tier)}</span>
+        <span class="badge badge-${safeConf}">${escHtml(item.confidence)}</span>
       </div>
       ${rows.map(([k,v]) => `
         <div class="field-row">
           <span class="field-key">${k}</span>
-          <span class="field-val new">${v.join(' / ')}</span>
+          <span class="field-val new">${escHtml(v.join(' / '))}</span>
         </div>
       `).join('')}
-      <div class="field-row"><span class="field-key">이유</span><span class="field-val">${item.reason}</span></div>
-      ${item.evidence && item.evidence.length ? `<div class="field-row"><span class="field-key">출처</span><span class="field-val">${item.evidence.map(e=>`<a href="${e}" target="_blank" style="color:var(--blue);font-size:11px">${e.slice(0,50)}...</a>`).join('<br>')}</span></div>` : ''}
+      <div class="field-row"><span class="field-key">이유</span><span class="field-val">${escHtml(item.reason)}</span></div>
+      ${item.evidence && item.evidence.length ? `<div class="field-row"><span class="field-key">출처</span><span class="field-val">${item.evidence.map(e=>`<a href="${safeUrl(e)}" target="_blank" rel="noopener noreferrer" style="color:var(--blue);font-size:11px">${escHtml(e.slice(0,50))}...</a>`).join('<br>')}</span></div>` : ''}
       <div class="actions">
         ${type === 'pending' ? `<button class="apply-btn" onclick="promoteItem(${i})">✅ approved로 승격</button>` : ''}
         <button class="skip-btn" onclick="skipItem('${type}', ${i})">건너뛰기</button>
@@ -674,7 +676,14 @@ function showToast(msg) {
 }
 
 function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+}
+
+function safeUrl(url) {
+  try {
+    const u = new URL(url);
+    return (u.protocol === 'https:' || u.protocol === 'http:') ? url : '#';
+  } catch { return '#'; }
 }
 
 // ─── 시작 ─────────────────────────────────────────────

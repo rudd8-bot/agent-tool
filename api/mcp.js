@@ -162,8 +162,8 @@ export default async function handler(req, res) {
       return replyErr(-32601, `지원하지 않는 메서드: ${method}`);
 
     } catch (err) {
-      console.error('MCP error:', err);
-      return replyErr(-32603, err.message);
+      console.error('MCP error:', err.message);
+      return replyErr(-32603, 'Internal server error');
     }
   }
 

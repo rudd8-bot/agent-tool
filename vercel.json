@@ -3,5 +3,9 @@
     { "source": "/api/models", "destination": "/api/models.js" },
     { "source": "/api/chat",   "destination": "/api/chat.js"   },
     { "source": "/api/mcp",    "destination": "/api/mcp.js"    }
-  ]
+  ],
+  "functions": {
+    "api/chat.js": { "maxDuration": 60 },
+    "api/mcp.js":  { "maxDuration": 30 }
+  }
 }
