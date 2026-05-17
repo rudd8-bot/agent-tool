@@ -1,13 +1,23 @@
 {
-  "version": "2.1",
-  "last_updated": "2026-05-15",
-  "update_note": "2026-05-15 자동 업데이트: 5개 에이전트 반영",
+  "version": "2.2",
+  "last_updated": "2026-05-17",
+  "update_note": "2026-05-17 카테고리 표준화 + best_for/avoid_for 한국어 통일. 7개 표준 카테고리 도입.",
+  "category_standard": {
+    "coding": "코딩, 디버깅, 리팩터링",
+    "reasoning": "논리, 추론, 판단, 분석",
+    "long_context": "긴 문서 처리",
+    "search": "실시간 검색, 정보 수집",
+    "agent_action": "자율 실행, 다단계 자동화",
+    "browser_automation": "브라우저 조작, 폼 입력, 웹 자동화",
+    "data": "데이터 처리, 분석"
+  },
   "agents": [
     {
       "id": "claude",
       "name": "Claude",
       "tag": "tag-claude",
       "tagName": "판단·설계·문서",
+      "categories": ["reasoning", "long_context", "coding"],
       "autonomy_level": 2,
       "human_in_loop": true,
       "task_types": [
@@ -71,25 +81,26 @@
       ],
       "review_status": "approved",
       "best_for": [
-        "Multi-file refactoring",
-        "Complex codebase analysis",
-        "Root cause analysis",
-        "Long-context reasoning",
-        "Enterprise automation",
-        "Visual design creation"
+        "여러 파일에 걸친 복잡한 코드를 리팩터링할 때",
+        "방대한 코드베이스를 처음부터 이해하고 분석할 때",
+        "문제의 근본 원인을 찾아야 할 때",
+        "긴 문서나 자료를 끝까지 일관성 있게 추론할 때",
+        "조직 차원의 업무 자동화 구조를 설계할 때",
+        "시각적인 디자인 산출물을 만들어야 할 때"
       ],
       "avoid_for": [
-        "High-frequency real-time tasks",
-        "Cost-sensitive applications",
-        "Peak hour usage"
+        "초당 수십 건 이상 실시간 응답이 필요할 때",
+        "비용을 최소화해야 하는 대량 호출 작업",
+        "사용 제한이 많이 걸리는 피크 시간대"
       ],
-      "last_updated": "2026-05-15"
+      "last_updated": "2026-05-17"
     },
     {
       "id": "chatgpt",
       "name": "ChatGPT",
       "tag": "tag-gpt",
       "tagName": "범용·멀티모달",
+      "categories": ["reasoning", "agent_action", "browser_automation"],
       "autonomy_level": 2,
       "human_in_loop": true,
       "task_types": [
@@ -149,23 +160,24 @@
       ],
       "review_status": "approved",
       "best_for": [
-        "Multi-step autonomous tasks",
-        "Visual browser automation",
-        "Enterprise workflow integration",
-        "Creative writing and ideation"
+        "여러 단계의 작업을 자율적으로 실행하고 싶을 때",
+        "시각적 브라우저로 웹 작업을 자동화할 때",
+        "기업 워크플로우와 통합된 작업이 필요할 때",
+        "아이디어를 자유롭게 펼치며 글이나 콘텐츠를 만들 때"
       ],
       "avoid_for": [
-        "Citation-heavy research",
-        "Long conversation continuity",
-        "High-frequency usage patterns"
+        "출처 인용이 중요한 리서치 작업",
+        "긴 대화의 맥락을 일관되게 유지해야 할 때",
+        "단시간에 많은 호출이 필요한 작업"
       ],
-      "last_updated": "2026-05-15"
+      "last_updated": "2026-05-17"
     },
     {
       "id": "perplexity",
       "name": "Perplexity",
       "tag": "tag-search",
       "tagName": "실시간 리서치",
+      "categories": ["search", "reasoning"],
       "autonomy_level": 1,
       "human_in_loop": true,
       "task_types": [
@@ -225,24 +237,25 @@
       ],
       "review_status": "approved",
       "best_for": [
-        "Multi-step research workflows",
-        "Real-time web automation",
-        "Complex data analysis",
-        "Academic research",
-        "Browser-based tasks"
+        "여러 단계로 진행되는 리서치 작업",
+        "실시간 웹 정보를 자동으로 수집할 때",
+        "출처가 명확히 필요한 복잡한 데이터 분석",
+        "논문이나 학술 자료를 찾고 정리할 때",
+        "출처 추적이 가능한 브라우저 기반 검색 작업"
       ],
       "avoid_for": [
-        "Extended conversational contexts",
-        "Pure creative tasks",
-        "Cost-sensitive research at scale"
+        "긴 대화 맥락이 이어져야 하는 작업",
+        "순수 창작이나 아이디어 발산 작업",
+        "비용을 최소화해야 하는 대규모 리서치"
       ],
-      "last_updated": "2026-05-15"
+      "last_updated": "2026-05-17"
     },
     {
       "id": "gemini",
       "name": "Gemini",
       "tag": "tag-google",
       "tagName": "구글 생태계·멀티모달",
+      "categories": ["browser_automation", "long_context", "coding", "data"],
       "autonomy_level": 2,
       "human_in_loop": true,
       "task_types": [
@@ -287,13 +300,27 @@
         "https://deepmind.google/technologies/gemini/",
         "https://swe-bench.github.io/"
       ],
-      "review_status": "approved"
+      "review_status": "approved",
+      "best_for": [
+        "구글 드라이브·시트·문서 등 구글 생태계에서 작업할 때",
+        "매우 긴 문서(100만 토큰 이상)를 한 번에 분석할 때",
+        "유튜브 영상이나 비디오 콘텐츠를 요약하고 정리할 때",
+        "브라우저에서 반복 작업을 자동으로 실행할 때",
+        "구글 스프레드시트의 데이터를 자동 처리할 때"
+      ],
+      "avoid_for": [
+        "구글 외 서비스(Microsoft·Slack 등)와 연동이 필요할 때",
+        "복잡한 코드베이스 전체 리팩터링이 필요할 때",
+        "출처 인용 기반 리서치가 핵심일 때"
+      ],
+      "last_updated": "2026-05-17"
     },
     {
       "id": "manus",
       "name": "Manus",
       "tag": "tag-auto",
       "tagName": "자율 실행 에이전트",
+      "categories": ["agent_action", "browser_automation", "search"],
       "autonomy_level": 5,
       "human_in_loop": false,
       "task_types": [
@@ -342,13 +369,28 @@
         "https://manus.im/",
         "https://arxiv.org/abs/2502.13138"
       ],
-      "review_status": "approved"
+      "review_status": "approved",
+      "best_for": [
+        "목표만 주고 처음부터 끝까지 자동으로 완수하고 싶을 때",
+        "웹 브라우징과 데이터 수집을 동시에 자동화할 때",
+        "리서치부터 보고서 생성까지 한 번에 처리할 때",
+        "여러 단계를 거치는 복합 자동화 워크플로우",
+        "사람 개입 없이 장시간 실행해야 하는 작업"
+      ],
+      "avoid_for": [
+        "빠른 응답이 필요한 작업(수 시간 소요 가능)",
+        "결제·계약 등 민감 정보가 포함된 작업",
+        "디버깅이나 감사 로그가 필요한 환경",
+        "코드 품질이 핵심인 작업"
+      ],
+      "last_updated": "2026-05-17"
     },
     {
       "id": "genspark",
       "name": "Genspark",
       "tag": "tag-browser",
       "tagName": "AI 브라우저·올인원 산출",
+      "categories": ["browser_automation", "agent_action"],
       "autonomy_level": 4,
       "human_in_loop": false,
       "task_types": [
@@ -393,13 +435,26 @@
       "evidence": [
         "https://www.genspark.ai/"
       ],
-      "review_status": "approved"
+      "review_status": "approved",
+      "best_for": [
+        "브라우저에서 본 내용을 바로 슬라이드나 문서로 만들 때",
+        "여러 탭을 비교하고 초안 발표자료를 만들 때",
+        "웹 관찰부터 보고서 산출까지 한 번에 처리할 때",
+        "Autopilot Mode로 다단계 자동화를 실행할 때"
+      ],
+      "avoid_for": [
+        "기존 코드베이스의 유지보수나 리팩터링",
+        "복잡한 비즈니스 조건에 대한 정확한 판단",
+        "수치·가격 정확도가 매우 중요한 작업"
+      ],
+      "last_updated": "2026-05-17"
     },
     {
       "id": "operator",
       "name": "OpenAI Operator",
       "tag": "tag-gpt",
       "tagName": "GPT 브라우저 에이전트",
+      "categories": ["browser_automation", "agent_action"],
       "autonomy_level": 4,
       "human_in_loop": true,
       "task_types": [
@@ -456,23 +511,25 @@
       ],
       "review_status": "approved",
       "best_for": [
-        "Automated issue resolution",
-        "Multi-step development workflows",
-        "OpenAI ecosystem integration",
-        "Background task execution"
+        "웹 폼 입력이나 반복적인 브라우저 업무 자동화",
+        "예약·주문 등 정해진 절차의 웹 작업",
+        "GitHub 이슈를 자동으로 처리할 때",
+        "OpenAI 생태계(DALL-E·Code Interpreter 등)와 통합 작업",
+        "백그라운드에서 다단계 개발 작업을 진행할 때"
       ],
       "avoid_for": [
-        "Cost-sensitive operations",
-        "Non-OpenAI tool integration",
-        "Real-time interactive control"
+        "결제·계약·민감 정보가 포함된 작업(승인 필수)",
+        "구글이나 Anthropic 생태계와 연동이 필요할 때",
+        "실시간 사람 개입과 통제가 필요한 작업"
       ],
-      "last_updated": "2026-05-15"
+      "last_updated": "2026-05-17"
     },
     {
       "id": "claudecode",
       "name": "Claude Code",
       "tag": "tag-code",
       "tagName": "코딩 에이전트",
+      "categories": ["coding", "agent_action", "reasoning"],
       "autonomy_level": 4,
       "human_in_loop": true,
       "task_types": [
@@ -535,18 +592,18 @@
       ],
       "review_status": "approved",
       "best_for": [
-        "Large codebase refactors",
-        "Security audits",
-        "Complex debugging",
-        "Multi-agent parallel workflows",
-        "Senior developer workflows"
+        "대규모 코드베이스의 리팩터링이 필요할 때",
+        "코드 보안 감사를 자동화할 때",
+        "복잡한 버그를 추적하고 수정할 때",
+        "여러 에이전트가 병렬로 작업해야 할 때",
+        "시니어 개발자 수준의 코드 품질이 필요할 때"
       ],
       "avoid_for": [
-        "Non-CLI users",
-        "Budget-constrained projects",
-        "Real-time collaborative editing"
+        "터미널/CLI 사용이 익숙하지 않은 사용자",
+        "예산 제약이 큰 프로젝트(API 비용 높음)",
+        "실시간 협업 편집이 필요한 작업"
       ],
-      "last_updated": "2026-05-15"
+      "last_updated": "2026-05-17"
     }
   ]
 }
