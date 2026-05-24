@@ -352,6 +352,97 @@ let lastQuery = '';
 let lastAnswer = '';
 let lastMode = '';
 
+// ── MANUS SKILLS (ai-router 데이터 기반 — 해당 AI 미보유 시 대안) ──
+const MANUS_SKILLS = [
+  { id:'perplexity-research', name:'Perplexity 리서치 모드', relatedAgent:'Perplexity', categories:['research'], inputSignals:['찾아줘','조사해줘','최신 정보','팩트체크','뉴스','논문'], description:'출처 기반 실시간 리서치. 팩트체크·시장조사·논문 검색.' },
+  { id:'document-reviewer', name:'문서 검토 모드', relatedAgent:'Claude', categories:['writing','qa'], inputSignals:['문서 검토','계약서','PDF 분석','리뷰해줘','회의록'], description:'Claude 스타일 장문 문서 추론·리뷰. 계약서·정책·제안서 분석.' },
+  { id:'repo-code-agent', name:'저장소 코딩 에이전트', relatedAgent:'Claude Code', categories:['coding'], inputSignals:['코드 수정','버그 수정','리팩터링','GitHub','PR','테스트'], description:'Claude Code 스타일 저장소 코딩. 버그수정·리팩터링·테스트.' },
+  { id:'deliverable-factory', name:'산출물 제작 모드', relatedAgent:'Genspark', categories:['presentation','writing'], inputSignals:['슬라이드 만들어줘','보고서 만들어줘','인포그래픽','발표자료'], description:'Genspark 스타일 산출물 제작. 슬라이드·보고서·인포그래픽.' },
+  { id:'data-analyst-mode', name:'데이터 분석 모드', relatedAgent:'(전문 도구)', categories:['data'], inputSignals:['데이터 분석','엑셀','CSV','차트','통계','대시보드'], description:'CSV·통계·차트·대시보드 분석.' },
+  { id:'automation-ops-mode', name:'자동화 운영 모드', relatedAgent:'n8n/Zapier', categories:['automation'], inputSignals:['자동화','스케줄','반복','API 연동','봇','워크플로'], description:'반복 작업·스케줄·API 연동·웹훅·알림 자동화.' },
+  { id:'browser-operator-mode', name:'브라우저 자동화 모드', relatedAgent:'Operator/Manus', categories:['browser','automation'], inputSignals:['브라우저에서','폼 입력','예약해줘','웹에서 자동으로','로그인 필요'], description:'폼 입력·예약·반복 웹 업무·스크래핑.' },
+  { id:'qa-critic-mode', name:'품질 검수 모드', relatedAgent:'Claude', categories:['qa'], inputSignals:['검토해줘','검수해줘','리뷰해줘','품질 확인','오류 찾아줘'], description:'출력물 검수·팩트체크·논리검증·할루시네이션 탐지.' },
+  { id:'web-monitoring-mode', name:'웹 모니터링 모드', relatedAgent:'Manus', categories:['automation','research'], inputSignals:['모니터링','변경 감지','가격 추적','경쟁사 추적','정기 확인'], description:'페이지 변경감지·가격변동·경쟁사 추적·정기 체크.' },
+  { id:'research-lookup', name:'심층 리서치 모드', relatedAgent:'Perplexity', categories:['research'], inputSignals:['논문 검색','연구 데이터','학술 자료','깊게 조사'], description:'병렬 검색·학술 자료 조회·출처 평가.' },
+  { id:'general-chat-copilot', name:'범용 어시스턴트 모드', relatedAgent:'ChatGPT', categories:['general'], inputSignals:['설명해줘','아이디어','브레인스토밍','뭐가 좋을까'], description:'일상 Q&A·브레인스토밍·초안 작성·계획.' },
+  { id:'persistent-computing', name:'지속 컴퓨팅 모드', relatedAgent:'Manus', categories:['automation','coding'], inputSignals:['Docker','서버 실행','백그라운드 유지','무거운 연산'], description:'Docker·백그라운드 작업·무거운 연산·게임 서버.' },
+  { id:'perplexity-style-research', name:'보고서형 리서치 모드', relatedAgent:'Perplexity', categories:['research','writing'], inputSignals:['출처 포함','보고서로 정리','검색해줘'], description:'병렬 검색·출처 평가·보고서 정리.' },
+  { id:'ai-mode-router', name:'AI 모드 라우터', relatedAgent:'Manus', categories:['general','reasoning'], inputSignals:['어떤 AI 써야 해','모드 선택','자동으로 골라줘'], description:'여러 AI 모드 자동 선택·조합·라우팅.' },
+];
+
+// ── KEYWORD → CATEGORY MAP ──
+const KEYWORD_MAP = {
+  조사:'research', 검색:'research', 리서치:'research', 논문:'research',
+  팩트:'research', 뉴스:'research', 시장:'research', 최신:'research',
+  출처:'research', 근거:'research', '찾아줘':'research',
+  코드:'coding', 코딩:'coding', 버그:'coding', 개발:'coding',
+  함수:'coding', 스크립트:'coding', 리팩터:'coding', 테스트:'coding',
+  github:'coding', git:'coding', 파이썬:'coding', python:'coding',
+  javascript:'coding', typescript:'coding', pr:'coding',
+  문서:'writing', 작성:'writing', 편집:'writing', 번역:'writing',
+  요약:'writing', 이메일:'writing', 보고서:'writing', 블로그:'writing',
+  기사:'writing', 콘텐츠:'writing',
+  데이터:'data', 엑셀:'data', csv:'data', 통계:'data',
+  차트:'data', 그래프:'data', 대시보드:'data', 시각화:'data',
+  매출:'data', 지표:'data',
+  자동화:'automation', 스케줄:'automation', 반복:'automation',
+  api:'automation', 연동:'automation', 봇:'automation',
+  워크플로:'automation', 알림:'automation', 크롤링:'automation',
+  파이프라인:'automation', 트리거:'automation',
+  이미지:'media', 영상:'media', 동영상:'media', 음악:'media',
+  오디오:'media', 그림:'media',
+  슬라이드:'presentation', 발표:'presentation', ppt:'presentation',
+  프레젠테이션:'presentation', 인포그래픽:'presentation',
+  웹사이트:'web', 웹앱:'web', 홈페이지:'web',
+  프론트엔드:'web', 백엔드:'web',
+  검토:'qa', 검수:'qa', 리뷰:'qa', 품질:'qa', 검증:'qa', 감사:'qa',
+  브라우저:'browser', 폼:'browser', 예약:'browser', 주문:'browser', 스크래핑:'browser',
+  판단:'reasoning', 설계:'reasoning', 논리:'reasoning', 추론:'reasoning',
+  조건:'reasoning', 아키텍처:'reasoning',
+};
+
+// ── 카테고리 감지 ──
+function detectCategory(q) {
+  const lower = q.toLowerCase();
+  const scores = {};
+  for (const [kw, cat] of Object.entries(KEYWORD_MAP)) {
+    if (lower.includes(kw)) scores[cat] = (scores[cat] || 0) + 1;
+  }
+  if (!Object.keys(scores).length) return 'general';
+  return Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
+}
+
+// ── 경고 추출 ──
+function extractWarnings(q) {
+  const lower = q.toLowerCase();
+  const warns = [];
+  if (lower.includes('결제') || lower.includes('계약') || lower.includes('민감'))
+    warns.push('⚠️ 결제·계약·민감 정보 포함 작업은 자동 실행 전 반드시 사람이 최종 확인해야 합니다.');
+  if (lower.includes('최신') || lower.includes('오늘') || lower.includes('현재') || lower.includes('실시간'))
+    warns.push('⚠️ 실시간 정보가 필요한 작업은 Perplexity 또는 웹 검색 스킬을 우선 사용하세요.');
+  if ((lower.includes('코드') || lower.includes('개발')) && lower.includes('자동'))
+    warns.push('⚠️ 자동 생성 코드는 Claude Code 또는 QA 검수 모드로 품질 검증을 권장합니다.');
+  if (lower.includes('개인정보') || lower.includes('비밀번호') || lower.includes('인증'))
+    warns.push('⚠️ 개인정보·인증 정보가 포함된 작업은 외부 AI 서비스 전송을 주의하세요.');
+  return warns;
+}
+
+// ── Manus Skills 대안 매칭 ──
+function matchManusSkills(q, category) {
+  const lower = q.toLowerCase();
+  return MANUS_SKILLS
+    .map(skill => {
+      let score = skill.categories.includes(category) ? 2 : 0;
+      for (const sig of skill.inputSignals) {
+        if (lower.includes(sig.toLowerCase())) score += 3;
+      }
+      return { ...skill, score };
+    })
+    .filter(s => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+}
+
 // ── API CALL (server proxy) ──
 async function callClaude(body) {
   const res = await fetch('/api/chat', {
@@ -478,6 +569,13 @@ async function doSearch() {
   area.innerHTML = '';
 
   try {
+    const warnings = extractWarnings(q);
+    const category = detectCategory(q);
+    const warnHtml = warnings.length
+      ? `<div style="margin-bottom:8px">${warnings.map(w => `<div style="font-size:12px;color:#92400e;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:5px 9px;margin-bottom:4px">${escHtml(w)}</div>`).join('')}</div>`
+      : '';
+    const categoryLabels = {research:'리서치·조사',coding:'코딩·개발',writing:'문서·글쓰기',data:'데이터 분석',automation:'자동화·운영',media:'미디어·생성',presentation:'프레젠테이션',web:'웹·앱 개발',qa:'품질 검토',browser:'브라우저 자동화',reasoning:'논리·추론',general:'범용·기타'};
+    const categoryLabel = categoryLabels[category] || '범용·기타';
     const confirmData = await callClaude({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 150,
@@ -494,6 +592,8 @@ ${q}`
     btn.disabled = false; btn.textContent = '검색';
     confirmArea.innerHTML = `<div class="confirm-bubble-inner" style="padding-top:12px">
       <div class="confirm-bubble">
+        ${warnHtml}
+        <div style="font-size:10px;font-weight:700;color:var(--hint);letter-spacing:.05em;margin-bottom:5px;text-transform:uppercase">감지된 작업 유형: ${escHtml(categoryLabel)}</div>
         <div class="confirm-text"><strong>🤖 Claude</strong><br>${escHtml(summary)}</div>
         <div class="confirm-btns">
           <button class="confirm-yes" onclick="proceedSearch()">맞아 →</button>
@@ -519,13 +619,47 @@ async function proceedSearch() {
   area.innerHTML = `<div class="search-result-wrap"><div class="search-result"><div class="loading-dots"><span></span><span></span><span></span></div></div></div>`;
   const mode = detectMode(q);
   lastQuery = q; lastMode = mode;
-  const modelSummary = MODELS.map(m =>
-    `[${m.name}] 유형:${m.tagName} 강점:${m.strengths.slice(0, 3).join(',')} 약점:${m.weaknesses.slice(0, 2).join(',')} 단독:${m.alone} 조합:${m.combo}`
-  ).join('\n');
+  const category = detectCategory(q);
+  const warnings = extractWarnings(q);
+  const matchedSkills = matchManusSkills(q, category);
+
+  // 강화된 모델 요약 (누락 필드 추가)
+  const modelSummary = MODELS.map(m => {
+    const scoreStr = m.scores ? Object.entries(m.scores).map(([k,v])=>`${k}:${v}`).join(',') : '';
+    return `[${m.name}] 유형:${m.tagName} 자율도:${m.autonomy_level||'?'}/5 사람개입:${m.human_in_loop?'필요':'불필요'}` +
+      `\n  강점:${m.strengths.slice(0,3).join(',')}` +
+      `\n  약점:${m.weaknesses.slice(0,2).join(',')}` +
+      `\n  선택조건:${m.when_to_choose||m.alone}` +
+      `\n  비선택조건:${m.when_not_to_choose||''}` +
+      `\n  실패패턴:${m.failure_pattern||''}` +
+      `\n  조합트리거:${m.combo_trigger||m.combo}` +
+      (scoreStr ? `\n  카테고리점수:${scoreStr}` : '');
+  }).join('\n\n');
+
+  // Manus Skills 요약
+  const skillSummary = matchedSkills.length
+    ? '\n\n[Manus 대안 스킬 — 해당 AI 미보유 시 활용]\n' + matchedSkills.map(s =>
+        `- ${s.name} (${s.relatedAgent} 대안): ${s.description}`
+      ).join('\n')
+    : '';
 
   let systemPrompt = '';
   if (mode === 'recommend') {
-    systemPrompt = `당신은 AI 에이전트 전문가입니다. 등록된 에이전트 데이터를 기반으로 사용자 질문에 가장 적합한 도구 조합을 추천하세요. 정리 안 된 현업 내용이 들어와도 맥락을 파악해서 답변하세요.\n\n등록 에이전트:\n${modelSummary}\n\n답변 형식:\n1. 추천 조합 (에이전트명 → 에이전트명)\n2. 각 에이전트 역할 (2-3줄)\n3. 주의사항 (있으면)\n4. 등록 에이전트 외 추가 고려 도구 (있으면 "추가 제안:" 으로 구분)\n\n한국어로 답변.`;
+    systemPrompt = `당신은 AI 에이전트 전문가입니다. 등록된 에이전트 데이터를 기반으로 사용자 질문에 가장 적합한 도구 조합을 추천하세요. 정리 안 된 현업 내용이 들어와도 맥락을 파악해서 답변하세요.
+
+감지된 작업 유형: ${category}
+${warnings.length ? '주의사항:\n' + warnings.join('\n') : ''}
+
+등록 에이전트 (상세):
+${modelSummary}${skillSummary}
+
+답변 형식:
+1. 추천 조합 (에이전트명 → 에이전트명)
+2. 각 에이전트 역할 (2-3줄) — 선택해야 할 이유 + 선택하면 안 되는 조건 포함
+3. 주의사항 (있으면)
+4. 해당 AI 미보유 시 Manus 스킬 대안 (있으면 "Manus 대안:" 으로 구분)
+
+한국어로 답변.`;
   } else if (mode === 'persona') {
     const match = MODELS.find(m => q.includes(m.name));
     if (match) {
@@ -571,9 +705,34 @@ async function proceedSearch() {
            </div>
          </div>`
       : '';
+    // confidence 계산: 추천된 모델 수 + 스킬 매칭 여부
+    const confLevel = mentionedModels.length >= 2 ? 'high' : mentionedModels.length === 1 ? 'medium' : 'low';
+    const confBadge = confLevel === 'high'
+      ? `<span style="font-size:10px;font-weight:700;color:#065f46;background:#d1fae5;border:1px solid #34d399;border-radius:99px;padding:2px 8px;margin-left:6px">신뢰도 높음</span>`
+      : confLevel === 'medium'
+      ? `<span style="font-size:10px;font-weight:700;color:#92400e;background:#fef3c7;border:1px solid #f59e0b;border-radius:99px;padding:2px 8px;margin-left:6px">신뢰도 중간</span>`
+      : `<span style="font-size:10px;font-weight:700;color:#7f1d1d;background:#fee2e2;border:1px solid #f87171;border-radius:99px;padding:2px 8px;margin-left:6px">신뢰도 낮음</span>`;
+
+    // Manus Skills 대안 섹션
+    const skillsSection = (mode === 'recommend' && matchedSkills.length > 0)
+      ? `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+           <div style="font-size:10px;font-weight:700;color:var(--hint);letter-spacing:.05em;margin-bottom:7px;text-transform:uppercase">🔧 해당 AI 없을 때 — Manus 스킬 대안</div>
+           <div style="display:flex;flex-direction:column;gap:6px">${matchedSkills.map(s =>
+             `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 11px">
+               <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px">${escHtml(s.name)}</div>
+               <div style="font-size:11px;color:var(--hint)">대안 대상: ${escHtml(s.relatedAgent)} &nbsp;·&nbsp; ${escHtml(s.description)}</div>
+             </div>`).join('')}
+           </div>
+         </div>`
+      : '';
+
     area.innerHTML = `<div class="search-result-wrap"><div class="search-result">
-      <span class="sr-badge ${badgeClass}">${badgeText}</span>
+      <div style="display:flex;align-items:center;margin-bottom:8px">
+        <span class="sr-badge ${badgeClass}">${badgeText}</span>
+        ${confBadge}
+      </div>
       <div class="sr-content">${escHtml(answer)}</div>
+      ${skillsSection}
       ${modelChips}
       <div class="sr-actions">
         <button class="sr-action-btn blue" onclick="copyToClaude()">📋 Claude에서 계속하기</button>
