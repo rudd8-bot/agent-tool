@@ -55,8 +55,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕
 
 /* HISTORY */
 .history-wrap{max-width:1000px;margin:0 auto;padding:0 14px}
-.history-row{display:flex;align-items:center;gap:6px;margin-bottom:8px;overflow:hidden}
-.history-chip{font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:99px;padding:3px 10px;cursor:pointer;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0}
+.history-row{display:flex;align-items:center;gap:5px;margin-bottom:8px;overflow:hidden}
+.history-chip{font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:99px;padding:3px 10px;cursor:pointer;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 0;min-width:0}
 .history-chip:hover{border-color:var(--hint);color:var(--text)}
 .history-label{font-size:10px;color:var(--hint);white-space:nowrap;flex-shrink:0}
 
@@ -441,14 +441,12 @@ function renderHistory() {
   if (!h.length) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
   row.innerHTML = '<span class="history-label">최근:</span>';
-  h.forEach((q, i) => {
+  const maxChips = window.innerWidth < 480 ? 2 : 3;
+  h.slice(0, maxChips).forEach(q => {
     const chip = document.createElement('button');
     chip.className = 'history-chip';
     chip.title = q;
     chip.textContent = q;
-    // 첫 번째 칩이 남은 공간 최대 사용, 이후 칩은 공간 있을 때만 표시
-    if (i === 0) chip.style.flexShrink = '1';
-    else chip.style.flexShrink = '0';
     chip.onclick = () => {
       document.getElementById('searchInput').value = q;
       expandSearch();
