@@ -67,6 +67,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕
 .badge-recommend{background:var(--green-bg);color:var(--green);border:1px solid var(--green-b)}
 .badge-persona{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-b)}
 .badge-free{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue)}
+/* SOURCE TIER BADGES */
+.tier-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;letter-spacing:.03em;margin-left:6px;vertical-align:middle}
+.tier-official{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
+.tier-benchmark{background:#e3f2fd;color:#1565c0;border:1px solid #90caf9}
+.tier-community{background:#fff8e1;color:#f57f17;border:1px solid #ffe082}
 .sr-content{font-size:13px;line-height:1.8;color:var(--text);white-space:pre-wrap}
 .sr-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .sr-action-btn{font-size:12px;padding:7px 14px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-family:inherit;transition:all .12s}
@@ -550,9 +555,23 @@ async function proceedSearch() {
       if (mentioned.length >= 2) { selected = mentioned.slice(0, 2).map(m => m.id); renderChips(); renderSelBar(); renderContent(); }
     }
     saveHistory(q);
+    // 추천 모드: 언급된 모델 빠른 선택 칩 생성
+    const mentionedModels = mode === 'recommend' ? MODELS.filter(m => answer.includes(m.name)) : [];
+    const modelChips = mentionedModels.length > 0
+      ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+           <div style="font-size:10px;font-weight:700;color:var(--hint);letter-spacing:.05em;margin-bottom:6px;text-transform:uppercase">추천된 에이전트 바로 보기</div>
+           <div style="display:flex;gap:6px;flex-wrap:wrap">${mentionedModels.map(m =>
+             `<button onclick="selected=[${mentionedModels.slice(0,2).map(x=>`'${x.id}'`).join(',')}];renderChips();renderSelBar();renderContent()" 
+              style="font-size:12px;font-weight:600;padding:5px 12px;border-radius:99px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-family:inherit">
+               <span class="tag ${m.tag}" style="margin-right:4px;padding:1px 6px;font-size:9px">${m.tagName}</span>${m.name}
+             </button>`).join('')}
+           </div>
+         </div>`
+      : '';
     area.innerHTML = `<div class="search-result-wrap"><div class="search-result">
       <span class="sr-badge ${badgeClass}">${badgeText}</span>
       <div class="sr-content">${escHtml(answer)}</div>
+      ${modelChips}
       <div class="sr-actions">
         <button class="sr-action-btn blue" onclick="copyToClaude()">📋 Claude에서 계속하기</button>
         <button class="sr-action-btn" onclick="clearSearch();document.getElementById('searchResultArea').innerHTML=''">✕ 닫기</button>
@@ -755,7 +774,7 @@ async function updatePersona(modelId) {
       max_tokens: 800,
       messages: [{
         role: 'user',
-        content: `AI 에이전트 "${m.name}"의 실제 작업 방식을 페르소나 데이터로 정리해줘.\n\n아래 3가지를 각 3-4개 항목으로:\n1. 작업 접근 순서\n2. 실패 패턴과 대응\n3. 판단 기준\n\n현재:\n접근순서: ${m.persona.approach.join(' / ')}\n실패패턴: ${m.persona.failPatterns.join(' / ')}\n판단기준: ${m.persona.decisionRules.join(' / ')}\n\n개선된 버전을 한국어로.`
+        content: `AI 에이전트 "${m.name}"의 실제 작업 방식을 페르소나 데이터로 정리해줘.\n\n아래 3가지를 각 3-4개 항목으로:\n1. 작업 접근 순서\n2. 실패 패턴과 대응\n3. 판단 기준\n\n현재:\n접근순서: ${(m.persona?.approach || []).join(' / ')}\n실패패턴: ${(m.persona?.failPatterns || []).join(' / ')}\n판단기준: ${(m.persona?.decisionRules || []).join(' / ')}\n\n개선된 버전을 한국어로.`
       }]
     });
     const answer = data.content[0].text;
@@ -839,10 +858,10 @@ function renderSingle(m) {
   const override = getPersonaOverride(m.id);
   const personaBody = override
     ? `<div style="font-size:12px;line-height:1.85;color:#2a1f6e;white-space:pre-wrap">${override}</div>`
-    : `<div class="persona-item"><div class="persona-item-title">작업 접근 순서</div><ul class="persona-list">${m.persona.approach.map(a => `<li>${a}</li>`).join('')}</ul></div>
-       <div class="persona-item"><div class="persona-item-title">실패 패턴 & 대응</div><ul class="persona-list">${m.persona.failPatterns.map(f => `<li>${f}</li>`).join('')}</ul></div>
-       <div class="persona-item" style="margin-bottom:0"><div class="persona-item-title">판단 기준</div><ul class="persona-list">${m.persona.decisionRules.map(d => `<li>${d}</li>`).join('')}</ul></div>`;
-  const ops = Object.entries(m.opinions).map(([k, v]) => `<div class="opinion-item"><strong>${k}</strong>${v}</div>`).join('');
+    : `<div class="persona-item"><div class="persona-item-title">작업 접근 순서</div><ul class="persona-list">${(m.persona?.approach || []).map(a => `<li>${a}</li>`).join('')}</ul></div>
+       <div class="persona-item"><div class="persona-item-title">실패 패턴 & 대응</div><ul class="persona-list">${(m.persona?.failPatterns || []).map(f => `<li>${f}</li>`).join('')}</ul></div>
+       <div class="persona-item" style="margin-bottom:0"><div class="persona-item-title">판단 기준</div><ul class="persona-list">${(m.persona?.decisionRules || []).map(d => `<li>${d}</li>`).join('')}</ul></div>`;
+  const ops = Object.entries(m.opinions || {}).map(([k, v]) => `<div class="opinion-item"><strong>${k}</strong>${v}</div>`).join('');
   const hCount = getAnalysisHistory(m.id).length;
   const hBadge = hCount > 0 ? `<span style="font-size:11px;color:var(--teal);background:var(--teal-bg);border:1px solid var(--teal-b);border-radius:99px;padding:2px 8px;margin-left:8px;cursor:pointer" onclick="showHistory('${m.id}')">📊 ${hCount}회 이력</span>` : '';
   const taskSection = lastQuery ? `
@@ -859,7 +878,7 @@ function renderSingle(m) {
   return `<div>
     ${taskSection}
     <div class="s-card">
-      <div class="s-head"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px"><div class="s-name">${m.name}</div>${hBadge}</div><div class="s-role">${m.role}</div><span class="tag ${m.tag}">${m.tagName}</span></div>
+      <div class="s-head"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px"><div class="s-name">${m.name}</div>${hBadge}${m.source_tier ? `<span class="tier-badge ${m.source_tier === 'official' ? 'tier-official' : m.source_tier === 'benchmark' ? 'tier-benchmark' : 'tier-community'}">${m.source_tier === 'official' ? '✓ Official' : m.source_tier === 'benchmark' ? '📊 Benchmark' : '💬 Community'}</span>` : ''}</div><div class="s-role">${m.role}</div><span class="tag ${m.tag}">${m.tagName}</span></div>
       <div class="s-body">
         <div class="sec-lbl">정체성</div>
         <div style="font-size:13px;line-height:1.7;color:#444">${m.identity}</div>
@@ -897,7 +916,7 @@ function renderCompare(models) {
   let opRows = '';
   if (n === 2) {
     const [a, b] = models;
-    opRows = `<div class="cmp-sec-lbl">상호 평가</div><div class="cmp-cell"><strong style="font-size:11px;color:var(--muted)">${a.name} → ${b.name}</strong><div style="font-size:12px;line-height:1.7;margin-top:4px">${a.opinions[b.name] || '-'}</div></div><div class="cmp-cell"><strong style="font-size:11px;color:var(--muted)">${b.name} → ${a.name}</strong><div style="font-size:12px;line-height:1.7;margin-top:4px">${b.opinions[a.name] || '-'}</div></div>`;
+    opRows = `<div class="cmp-sec-lbl">상호 평가</div><div class="cmp-cell"><strong style="font-size:11px;color:var(--muted)">${a.name} → ${b.name}</strong><div style="font-size:12px;line-height:1.7;margin-top:4px">${(a.opinions || {})[b.name] || '-'}</div></div><div class="cmp-cell"><strong style="font-size:11px;color:var(--muted)">${b.name} → ${a.name}</strong><div style="font-size:12px;line-height:1.7;margin-top:4px">${(b.opinions || {})[a.name] || '-'}</div></div>`;
   }
   return `${heads}<div class="cmp-grid ${cls}">${strRows}${weakRows}${aloneRows}${comboRows}${warnRows}${opRows}</div>`;
 }

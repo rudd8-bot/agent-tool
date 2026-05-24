@@ -17,7 +17,11 @@
       "name": "Claude",
       "tag": "tag-claude",
       "tagName": "판단·설계·문서",
-      "categories": ["reasoning", "long_context", "coding"],
+      "categories": [
+        "reasoning",
+        "long_context",
+        "coding"
+      ],
       "autonomy_level": 2,
       "human_in_loop": true,
       "task_types": [
@@ -51,22 +55,16 @@
         "다른 에이전트 지시문 설계",
         "긴 컨텍스트 유지(1M 토큰)",
         "안전·컴플라이언스 요건 준수",
-        "Claude Cowork (desktop GUI for non-tech users)",
-        "Claude Design (visual creation tool)",
-        "Agent Teams (parallel sub-agents)",
-        "Dreams (memory consolidation)",
-        "Claude Managed Agents API",
-        "1M token context window (Opus 4.6)",
-        "MCP server ecosystem"
+        "Claude Cowork (비개발자 데스크톱 자동화)",
+        "Agent Teams (서브에이전트 병렬 실행)",
+        "MCP 서버 생태계 연동"
       ],
       "weaknesses": [
         "직접 실행 불가",
         "실시간 웹 검색 성숙도 낮음",
         "브라우저 조작 불가",
-        "Compute shortage causing tighter usage limits",
-        "Peak hour restrictions",
-        "API costs scaling dramatically with usage",
-        "Medium effort default causing perceived quality decline"
+        "피크 시간대 사용량 제한",
+        "API 비용 확장 시 급증"
       ],
       "alone": "조건이 복잡하거나 판단 기준이 모호한 문서·분석 작업.",
       "combo": "Claude(판단·설계) + Claude Code(코드 실행) + Manus(자율 실행).",
@@ -93,14 +91,47 @@
         "비용을 최소화해야 하는 대량 호출 작업",
         "사용 제한이 많이 걸리는 피크 시간대"
       ],
-      "last_updated": "2026-05-17"
+      "last_updated": "2026-05-17",
+      "opinions": {
+        "ChatGPT": "범용성은 넓지만 긴 컨텍스트에서 일관성이 떨어짐. 이미지·음성 작업엔 적합하나 구조적 판단은 내가 더 정확함.",
+        "Perplexity": "실시간 인용 검색에서 나보다 훨씬 빠름. 리서치 전단계는 Perplexity에 맡기고 나는 그 결과를 구조화하는 게 효율적.",
+        "Gemini": "구글 생태계 통합은 독보적. 하지만 긴 추론 체인과 예외 판단에선 내가 더 안정적임.",
+        "Manus": "자율 실행 능력은 내가 없는 영역. 내가 설계한 지시문을 Manus에게 넘기면 최적의 분업.",
+        "Genspark": "멀티에이전트 병렬 처리가 장점이나 판단 품질보다 실행 속도 위주. 구조가 필요한 작업엔 내가 먼저.",
+        "OpenAI Operator": "결제·폼 자동화에 특화. 나는 실행 못하므로 Operator에게 실행을 위임하는 구조로 쓰는 게 맞음.",
+        "Claude Code": "같은 Anthropic 기반이라 지시 호환성이 가장 높음. 내가 설계하면 Claude Code가 구현하는 게 기본 워크플로."
+      },
+      "persona": {
+        "approach": [
+          "1. 요청에서 모호한 조건·예외·충돌 지점 먼저 식별",
+          "2. 판단 기준과 우선순위를 명시적으로 정의",
+          "3. 구조화된 출력(표·목록·단계) 형태로 정리",
+          "4. 실행이 필요한 부분은 다른 에이전트 지시문으로 전환"
+        ],
+        "failPatterns": [
+          "실시간 웹 데이터가 필요한 작업 → Perplexity에 먼저 넘겨야 함",
+          "직접 실행·클릭·파일 수정 → Claude Code 또는 Manus 위임 필요",
+          "과도하게 긴 답변 생성 → '300자 이내' 등 출력 형식 명시 필요",
+          "피크 시간대 응답 품질 저하 → 중요 작업은 비피크 시간에 실행"
+        ],
+        "decisionRules": [
+          "모호성이 있으면 임의 가정 대신 명시적 질문으로 해소",
+          "판단 결과보다 판단 근거를 먼저 서술",
+          "실행 불가 작업은 '누가 해야 하는지' 명시하여 위임",
+          "긴 컨텍스트에서도 초기 지시사항 유지 여부 주기적 확인"
+        ]
+      }
     },
     {
       "id": "chatgpt",
       "name": "ChatGPT",
       "tag": "tag-gpt",
       "tagName": "범용·멀티모달",
-      "categories": ["reasoning", "agent_action", "browser_automation"],
+      "categories": [
+        "reasoning",
+        "agent_action",
+        "browser_automation"
+      ],
       "autonomy_level": 2,
       "human_in_loop": true,
       "task_types": [
@@ -142,7 +173,7 @@
         "긴 컨텍스트 일관성",
         "코드베이스 직접 수정 불가",
         "전문 영역에서 특화 에이전트에 밀림",
-        "160 GPT-5.2 messages per 3 hours limit",
+        "GPT-5 시간당 메시지 한도 제한",
         "Context window issues in long conversations",
         "Response length regression documented",
         "Hallucination rate increase on citations"
@@ -170,14 +201,46 @@
         "긴 대화의 맥락을 일관되게 유지해야 할 때",
         "단시간에 많은 호출이 필요한 작업"
       ],
-      "last_updated": "2026-05-17"
+      "last_updated": "2026-05-17",
+      "opinions": {
+        "Claude": "긴 문서 추론과 구조적 판단에서 Claude가 앞섬. 나는 이미지·음성이 있어서 멀티모달 작업엔 내가 유리.",
+        "Perplexity": "검색 정확도는 비슷하나 Perplexity가 인용 출처를 더 명확히 붙임. 리서치 전용이면 Perplexity가 낫고 대화 이어가기엔 내가 낫음.",
+        "Gemini": "구글 Workspace 통합에선 Gemini 우위. 나는 OpenAI 생태계(플러그인, DALL-E)가 강점.",
+        "Manus": "자율 실행 영역은 Manus가 압도. 나는 아이디어 생성·이미지 산출 담당, Manus는 실행 담당으로 역할 분리가 맞음.",
+        "Genspark": "병렬 에이전트 처리는 Genspark이 앞섬. 나는 범용 대화·창작, Genspark은 구조화 실행.",
+        "OpenAI Operator": "같은 OpenAI 생태계라 연동이 자연스러움. 나는 계획·판단, Operator는 웹 실행 담당.",
+        "Claude Code": "코드베이스 직접 수정은 Claude Code가 압도. 나는 코드 아이디어·스니펫 수준에서 활용."
+      },
+      "persona": {
+        "approach": [
+          "1. 요청 유형(창작·이미지·음성·검색) 먼저 분류",
+          "2. 멀티모달이면 텍스트·이미지 동시 생성 경로 선택",
+          "3. 메모리에 저장된 사용자 개인화 정보 활용",
+          "4. 플러그인·GPT 생태계 연동 여부 판단"
+        ],
+        "failPatterns": [
+          "긴 대화에서 앞 내용 망각 → 중요 정보는 매 요청마다 재입력",
+          "출처 인용 환각 증가 → 사실 검증이 중요하면 Perplexity 병행",
+          "코드베이스 전체 수정 요청 → Claude Code로 위임 필요",
+          "응답 길이 제한 → 분할 출력 요청 또는 Claude로 전환"
+        ],
+        "decisionRules": [
+          "이미지·음성 포함 요청이면 ChatGPT 우선",
+          "기억 기반 개인화가 필요하면 메모리 활성화 확인",
+          "OpenAI 플러그인 연동 작업이면 GPT 생태계 내에서 처리",
+          "정확한 인용이 필요하면 Perplexity 병행 사용 권장"
+        ]
+      }
     },
     {
       "id": "perplexity",
       "name": "Perplexity",
       "tag": "tag-search",
       "tagName": "실시간 리서치",
-      "categories": ["search", "reasoning"],
+      "categories": [
+        "search",
+        "reasoning"
+      ],
       "autonomy_level": 1,
       "human_in_loop": true,
       "task_types": [
@@ -248,14 +311,48 @@
         "순수 창작이나 아이디어 발산 작업",
         "비용을 최소화해야 하는 대규모 리서치"
       ],
-      "last_updated": "2026-05-17"
+      "last_updated": "2026-05-17",
+      "opinions": {
+        "Claude": "구조적 판단·문서화에서 Claude가 더 깊음. 나는 정보 수집 속도와 인용 정확도가 강점이므로 전단계 리서치 담당이 맞음.",
+        "ChatGPT": "멀티모달엔 ChatGPT가 앞섬. 나는 실시간 정보 정확도가 강점. 창작·이미지엔 ChatGPT, 사실 검색엔 나.",
+        "Gemini": "구글 검색 연동은 Gemini가 유리한 지점이 있음. 하지만 인용 투명성과 답변 간결성에서 내가 앞서는 경우 많음.",
+        "Manus": "내가 수집한 리서치 결과를 Manus가 자율 실행하는 조합이 강력. 나는 정보 공급자, Manus는 실행자.",
+        "Genspark": "멀티소스 정보 처리에서 겹치는 영역이 있음. Genspark은 실행 중심, 나는 인용·사실 검증 중심으로 다름.",
+        "OpenAI Operator": "웹 실행은 Operator, 웹 정보 수집은 나. 조합 시 내가 먼저 조사하고 Operator가 실행하는 흐름.",
+        "Claude Code": "코딩 관련 최신 문서·기술 리서치는 내가 수집, 실제 구현은 Claude Code. 좋은 분업."
+      },
+      "persona": {
+        "approach": [
+          "1. 쿼리를 검색에 최적화된 키워드로 분해",
+          "2. 실시간 웹 소스 병렬 검색 및 신뢰도 평가",
+          "3. 인용 출처 명시와 함께 핵심 내용 요약",
+          "4. 후속 질문 제안으로 리서치 흐름 유도"
+        ],
+        "failPatterns": [
+          "창작·이미지·코딩 작업 → ChatGPT·Claude로 전환 필요",
+          "단발 검색이 아닌 복잡한 판단 → Claude에게 결과 넘겨 구조화",
+          "오래된 아카이브 정보 → 인용 날짜 반드시 확인",
+          "전문 기술 문서 분석 → Claude Code 또는 Claude 병행"
+        ],
+        "decisionRules": [
+          "최신 정보 여부가 핵심이면 Perplexity 우선",
+          "출처 신뢰도 순위로 답변 구성",
+          "리서치 결과는 그대로 전달하고 판단·구조화는 Claude에게",
+          "검색 결과가 충돌하면 날짜 기준으로 최신 우선"
+        ]
+      }
     },
     {
       "id": "gemini",
       "name": "Gemini",
       "tag": "tag-google",
       "tagName": "구글 생태계·멀티모달",
-      "categories": ["browser_automation", "long_context", "coding", "data"],
+      "categories": [
+        "browser_automation",
+        "long_context",
+        "coding",
+        "data"
+      ],
       "autonomy_level": 2,
       "human_in_loop": true,
       "task_types": [
@@ -313,14 +410,47 @@
         "복잡한 코드베이스 전체 리팩터링이 필요할 때",
         "출처 인용 기반 리서치가 핵심일 때"
       ],
-      "last_updated": "2026-05-17"
+      "last_updated": "2026-05-17",
+      "opinions": {
+        "Claude": "판단·추론 깊이에선 Claude가 우세. 나는 구글 생태계 통합과 실시간 구글 검색 연동이 차별점.",
+        "ChatGPT": "OpenAI 생태계(DALL-E, 플러그인)는 ChatGPT 우위. 나는 구글 Docs·Gmail·Drive 통합에서 앞섬.",
+        "Perplexity": "실시간 인용 검색에선 Perplexity가 특화. 나는 구글 서비스와 연결이 필요한 리서치에서 강점.",
+        "Manus": "자율 실행 범위는 Manus가 넓음. 나는 구글 워크스페이스 내 반복 작업 자동화에 더 적합.",
+        "Genspark": "멀티에이전트 자율 처리는 Genspark이 앞섬. 나는 구글 생태계 종속 작업에 집중.",
+        "OpenAI Operator": "웹 자동화 자체는 비슷한 영역이나 나는 구글 서비스 특화, Operator는 범용 웹 폼 특화.",
+        "Claude Code": "코딩 전문성은 Claude Code가 앞섬. 나는 구글 앱스크립트·Sheets 자동화 수준에서 활용."
+      },
+      "persona": {
+        "approach": [
+          "1. 구글 서비스(Docs·Gmail·Drive·Sheets) 연동 여부 먼저 확인",
+          "2. 구글 실시간 검색 연동으로 최신 정보 보강",
+          "3. 멀티모달 입력(이미지·텍스트) 동시 처리",
+          "4. 구글 워크스페이스 내 자동화 경로 선택"
+        ],
+        "failPatterns": [
+          "구글 생태계 외부 서비스 연동 → Manus 또는 Operator 위임",
+          "깊은 추론·예외 판단 → Claude로 전환",
+          "코드베이스 수정 → Claude Code 위임",
+          "구글 계정 없는 환경 → 기능 제한 발생"
+        ],
+        "decisionRules": [
+          "구글 Workspace 연동이 필요하면 Gemini 우선",
+          "구글 검색 최신성이 중요하면 Gemini 활용",
+          "판단보다 실행이 필요하면 Manus 또는 Operator로 이전",
+          "출력 정확도보다 속도가 중요하면 Flash 모델 선택"
+        ]
+      }
     },
     {
       "id": "manus",
       "name": "Manus",
       "tag": "tag-auto",
       "tagName": "자율 실행 에이전트",
-      "categories": ["agent_action", "browser_automation", "search"],
+      "categories": [
+        "agent_action",
+        "browser_automation",
+        "search"
+      ],
       "autonomy_level": 5,
       "human_in_loop": false,
       "task_types": [
@@ -383,14 +513,46 @@
         "디버깅이나 감사 로그가 필요한 환경",
         "코드 품질이 핵심인 작업"
       ],
-      "last_updated": "2026-05-17"
+      "last_updated": "2026-05-17",
+      "opinions": {
+        "Claude": "설계·판단은 Claude가 월등. 나는 그 설계를 실제로 실행하는 역할. 혼자 쓰면 판단 품질이 낮아짐.",
+        "ChatGPT": "멀티모달 창작은 ChatGPT가 앞섬. 나는 실행·자동화 영역에서 압도. 역할이 명확히 다름.",
+        "Perplexity": "리서치는 Perplexity가 빠름. 나는 그 리서치 결과를 바탕으로 실제 작업까지 완수하는 점이 다름.",
+        "Gemini": "구글 생태계 내부 작업은 Gemini가 나을 수 있음. 나는 구글 외 범용 웹·앱 자동화에서 더 유연함.",
+        "Genspark": "Genspark과 영역이 겹침. Genspark은 멀티에이전트 병렬 처리, 나는 단일 복잡 작업 완수에 강점.",
+        "OpenAI Operator": "웹 자동화에서 유사. Operator는 GPT 생태계 통합이 강점, 나는 더 광범위한 자율 브라우징과 판단.",
+        "Claude Code": "코드 작업은 Claude Code가 훨씬 정밀함. 나는 코드 없는 자율 실행, Claude Code는 코드 직접 수정."
+      },
+      "persona": {
+        "approach": [
+          "1. 목표(Goal)만 입력받아 실행 계획 자율 수립",
+          "2. 브라우저·파일·코드 도구를 순서에 맞게 자동 선택",
+          "3. 중간 결과를 스스로 검증하며 다음 단계 진행",
+          "4. 결제·서명 등 민감 단계에서 사용자 개입 요청"
+        ],
+        "failPatterns": [
+          "민감 정보(결제·계약) 자동 실행 → 반드시 사용자 확인 단계 삽입",
+          "판단 기준이 모호한 작업 → 사전에 Claude로 지시문 설계 필요",
+          "20시간 이상 장기 작업 → 중간 체크포인트 설정 권장",
+          "실시간 인용이 필요한 리서치 → Perplexity 전단계 활용"
+        ],
+        "decisionRules": [
+          "목표가 명확하고 실행 단계가 예측 가능하면 Manus 단독",
+          "판단이 포함된 복잡한 작업이면 Claude 설계 → Manus 실행",
+          "민감 단계는 자동화 금지, 사용자 takeover 필수",
+          "실패 시 재시도 전에 지시문 재검토"
+        ]
+      }
     },
     {
       "id": "genspark",
       "name": "Genspark",
       "tag": "tag-browser",
       "tagName": "AI 브라우저·올인원 산출",
-      "categories": ["browser_automation", "agent_action"],
+      "categories": [
+        "browser_automation",
+        "agent_action"
+      ],
       "autonomy_level": 4,
       "human_in_loop": false,
       "task_types": [
@@ -447,14 +609,46 @@
         "복잡한 비즈니스 조건에 대한 정확한 판단",
         "수치·가격 정확도가 매우 중요한 작업"
       ],
-      "last_updated": "2026-05-17"
+      "last_updated": "2026-05-17",
+      "opinions": {
+        "Claude": "판단·구조 설계는 Claude 압도. 나는 여러 에이전트를 병렬로 돌려 빠르게 결과 취합하는 것이 강점.",
+        "ChatGPT": "ChatGPT는 창작·이미지 중심. 나는 정보 수집·비교·요약을 병렬로 처리하는 구조적 작업에 강함.",
+        "Perplexity": "리서치 인용은 Perplexity가 더 정확. 나는 여러 소스를 동시에 검색·정리하는 자동화에 특화.",
+        "Gemini": "구글 통합은 Gemini 우위. 나는 멀티소스 병렬 처리 자동화에서 차별화.",
+        "Manus": "자율 실행 영역이 겹침. Manus는 단일 복잡 작업 완수, 나는 병렬 멀티스텝 처리에 강점.",
+        "OpenAI Operator": "웹 폼·결제 자동화는 Operator 특화. 나는 병렬 정보 처리와 슬라이드 자동 생성 등 산출물 중심.",
+        "Claude Code": "코드 구현은 Claude Code가 정밀. 나는 코드 없이 UI 기반 자동화 산출물 생성에 초점."
+      },
+      "persona": {
+        "approach": [
+          "1. 작업을 병렬 처리 가능한 단위로 분해",
+          "2. 여러 에이전트·소스를 동시에 실행",
+          "3. 결과를 취합하여 슬라이드·리포트 형태로 산출",
+          "4. Autopilot 모드로 사용자 개입 최소화"
+        ],
+        "failPatterns": [
+          "깊은 판단·조건 설계 → Claude로 전환 필요",
+          "코드베이스 직접 수정 → Claude Code 위임",
+          "실시간 정확한 인용 → Perplexity 병행",
+          "민감 정보 처리 → 사용자 확인 단계 필수"
+        ],
+        "decisionRules": [
+          "여러 소스를 빠르게 취합해야 하면 Genspark 우선",
+          "슬라이드·리포트 형태 산출물이 필요하면 Genspark",
+          "판단 품질보다 속도와 병렬성이 중요하면 선택",
+          "결과 정확도 검증은 항상 사람이 최종 확인"
+        ]
+      }
     },
     {
       "id": "operator",
       "name": "OpenAI Operator",
       "tag": "tag-gpt",
       "tagName": "GPT 브라우저 에이전트",
-      "categories": ["browser_automation", "agent_action"],
+      "categories": [
+        "browser_automation",
+        "agent_action"
+      ],
       "autonomy_level": 4,
       "human_in_loop": true,
       "task_types": [
@@ -522,14 +716,47 @@
         "구글이나 Anthropic 생태계와 연동이 필요할 때",
         "실시간 사람 개입과 통제가 필요한 작업"
       ],
-      "last_updated": "2026-05-17"
+      "last_updated": "2026-05-17",
+      "opinions": {
+        "Claude": "판단·설계는 Claude 압도. 나는 설계된 지시를 웹에서 직접 실행하는 단계 담당. 분업이 최선.",
+        "ChatGPT": "같은 OpenAI 생태계. ChatGPT가 계획·콘텐츠, 나는 폼·결제·웹 조작 실행 담당으로 자연스러운 분업.",
+        "Perplexity": "정보 수집은 Perplexity, 수집된 내용 기반 웹 실행은 나. 순서가 있는 조합.",
+        "Gemini": "구글 생태계 내부 작업은 Gemini 우위. 나는 OpenAI 기반 범용 웹 실행에 강점.",
+        "Manus": "자율 실행에서 가장 유사한 경쟁자. Manus는 더 넓은 판단 포함, 나는 GPT 통합 + 사용자 개입 구조가 차이.",
+        "Genspark": "병렬 처리는 Genspark. 나는 단일 웹 실행 작업의 안정성과 GPT 통합에 집중.",
+        "Claude Code": "코딩 작업은 Claude Code. 나는 코드 없이 브라우저 UI를 조작하는 영역 담당."
+      },
+      "persona": {
+        "approach": [
+          "1. 실행할 웹 작업(폼·결제·예약) 목록 확인",
+          "2. GPT-4o 추론으로 화면 상태 판단",
+          "3. 단계별 클릭·입력 자동 실행",
+          "4. 민감 정보 입력 전 사용자 확인 요청"
+        ],
+        "failPatterns": [
+          "결제·계약 정보 자동 입력 → 반드시 사용자 takeover",
+          "구글·Anthropic 생태계 서비스 → Gemini 또는 Claude로 전환",
+          "로컬 파일·환경 접근 → Claude Code로 위임",
+          "비표준 UI 구조 → 오류 발생 가능성 높음"
+        ],
+        "decisionRules": [
+          "반복적인 웹 폼 작업이면 Operator 우선",
+          "OpenAI 생태계 연동이 포함되면 Operator 활용",
+          "민감 정보는 절대 자동 입력 금지",
+          "실패 시 수동 확인 후 재시작"
+        ]
+      }
     },
     {
       "id": "claudecode",
       "name": "Claude Code",
       "tag": "tag-code",
       "tagName": "코딩 에이전트",
-      "categories": ["coding", "agent_action", "reasoning"],
+      "categories": [
+        "coding",
+        "agent_action",
+        "reasoning"
+      ],
       "autonomy_level": 4,
       "human_in_loop": true,
       "task_types": [
@@ -603,7 +830,36 @@
         "예산 제약이 큰 프로젝트(API 비용 높음)",
         "실시간 협업 편집이 필요한 작업"
       ],
-      "last_updated": "2026-05-17"
+      "last_updated": "2026-05-17",
+      "opinions": {
+        "Claude": "설계·판단은 Claude가 나의 지시 제공자. 나는 그 설계를 코드베이스에 직접 반영하는 실행자. 기본 분업.",
+        "ChatGPT": "ChatGPT는 코드 아이디어·스니펫 수준. 나는 실제 코드베이스 전체를 읽고 멀티파일 수정·테스트 실행까지 함.",
+        "Perplexity": "최신 라이브러리·기술 리서치는 Perplexity가 빠름. 나는 그 결과를 실제 코드에 반영하는 역할.",
+        "Gemini": "구글 관련 스크립트 자동화는 Gemini가 나을 수 있음. 나는 복잡한 코드베이스 수정과 테스트 루프에 강점.",
+        "Manus": "자율 실행에서 겹치는 부분 있음. Manus는 코드 없는 자율 작업, 나는 코드 직접 수정과 Git 연동이 핵심 차이.",
+        "Genspark": "병렬 처리 자동화는 Genspark. 나는 단일 코드베이스의 품질 높은 정밀 수정에 집중.",
+        "OpenAI Operator": "Operator는 웹 UI 조작, 나는 터미널·코드 조작. 실행 레이어가 완전히 다름."
+      },
+      "persona": {
+        "approach": [
+          "1. 코드베이스 전체 구조 파악 (파일 트리·의존성)",
+          "2. 수정 범위 특정 후 멀티파일 동시 편집",
+          "3. 테스트 실행으로 변경사항 검증",
+          "4. Git commit·PR 생성으로 변경 이력 관리"
+        ],
+        "failPatterns": [
+          "브라우저 UI 확인이 필요한 작업 → 스크린샷 별도 제공 필요",
+          "초기 프로젝트 세팅 → 초보자에게 진입장벽 있음",
+          "대용량 일괄 요청 → 작은 단위로 나눠 요청해야 품질 유지",
+          "실제 DOM 추정 오류 → 브라우저 로그 별도 확인 필요"
+        ],
+        "decisionRules": [
+          "기존 코드베이스가 있고 수정이 필요하면 Claude Code 우선",
+          "테스트 자동화가 중요한 작업에서 강점 발휘",
+          "설계는 Claude에서, 구현은 Claude Code에서 처리",
+          "PR 수준 품질이 필요하면 Claude Code가 최선"
+        ]
+      }
     }
   ]
 }
