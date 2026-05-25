@@ -72,6 +72,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕
 .tier-official{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
 .tier-benchmark{background:#e3f2fd;color:#1565c0;border:1px solid #90caf9}
 .tier-community{background:#fff8e1;color:#f57f17;border:1px solid #ffe082}
+/* SEQUENCE FLOW */
+.seq-flow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.seq-step{display:flex;flex-direction:column;align-items:center;gap:3px}
+.seq-chip{font-size:12px;font-weight:700;padding:7px 14px;border-radius:99px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-family:inherit;transition:all .12s;white-space:nowrap}
+.seq-chip:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
+.seq-role{font-size:9px;color:var(--hint);text-align:center;max-width:90px}
+.seq-arrow{font-size:16px;color:var(--hint);margin:0 2px;padding-bottom:14px}
+.seq-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+/* TASK TYPE CHIPS */
+.task-type-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;align-items:center}
+.task-type-chip{font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:inherit;transition:all .12s;white-space:nowrap}
+.task-type-chip:hover{border-color:var(--hint);color:var(--text)}
+.task-type-chip.active{background:var(--amber-bg);border-color:var(--amber-b);color:var(--amber);font-weight:700}
+/* QUALITY GATE */
+.quality-gate{background:#fff8e1;border:1px solid #ffe082;border-radius:var(--rsm);padding:10px 13px;margin-top:10px;margin-bottom:4px}
+.quality-gate-title{font-size:10px;font-weight:700;color:#f57f17;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.quality-gate-list{list-style:none}
+.quality-gate-list li{font-size:12px;line-height:1.8;color:#5d4037}
+.quality-gate-list li::before{content:"☑ ";color:#f57f17;font-weight:700}
 .sr-content{font-size:13px;line-height:1.8;color:var(--text);white-space:pre-wrap}
 .sr-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .sr-action-btn{font-size:12px;padding:7px 14px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-family:inherit;transition:all .12s}
@@ -274,6 +293,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕
         <button class="mode-tag" id="tag-persona" onclick="setMode('persona')">페르소나</button>
         <button class="mode-tag" id="tag-free" onclick="setMode('free')">자유 질문</button>
       </div>
+      <div class="task-type-row">
+        <span style="font-size:10px;color:var(--hint);white-space:nowrap">작업 유형:</span>
+        <button class="task-type-chip" data-type="research" onclick="setTaskType('research')">🔍 리서치·조사</button>
+        <button class="task-type-chip" data-type="coding" onclick="setTaskType('coding')">💻 코딩·개발</button>
+        <button class="task-type-chip" data-type="writing" onclick="setTaskType('writing')">📄 문서·글쓰기</button>
+        <button class="task-type-chip" data-type="automation" onclick="setTaskType('automation')">⚡ 자동화·실행</button>
+        <button class="task-type-chip" data-type="data" onclick="setTaskType('data')">📊 데이터 분석</button>
+      </div>
     </div>
   </div>
 </div>
@@ -351,6 +378,7 @@ let tripleMode = false;
 let lastQuery = '';
 let lastAnswer = '';
 let lastMode = '';
+let selectedTaskType = null;
 
 // ── MANUS SKILLS (ai-router 데이터 기반 — 해당 AI 미보유 시 대안) ──
 const MANUS_SKILLS = [
@@ -403,6 +431,7 @@ const KEYWORD_MAP = {
 
 // ── 카테고리 감지 ──
 function detectCategory(q) {
+  if (selectedTaskType) return selectedTaskType;
   const lower = q.toLowerCase();
   const scores = {};
   for (const [kw, cat] of Object.entries(KEYWORD_MAP)) {
@@ -504,6 +533,13 @@ function setMode(m) {
   searchMode = m;
   ['auto', 'recommend', 'persona', 'free'].forEach(id => {
     document.getElementById('tag-' + id).classList.toggle('active', id === m);
+  });
+}
+
+function setTaskType(t) {
+  selectedTaskType = selectedTaskType === t ? null : t;
+  document.querySelectorAll('.task-type-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.type === selectedTaskType);
   });
 }
 
@@ -658,6 +694,7 @@ ${modelSummary}${skillSummary}
 2. 각 에이전트 역할 (2-3줄) — 선택해야 할 이유 + 선택하면 안 되는 조건 포함
 3. 주의사항 (있으면)
 4. 해당 AI 미보유 시 Manus 스킬 대안 (있으면 "Manus 대안:" 으로 구분)
+5. 반드시 마지막 줄에: "품질 게이트: [확인 사항 1] / [확인 사항 2]" 형식으로 1-2가지 최종 체크포인트 작성
 
 한국어로 답변.`;
   } else if (mode === 'persona') {
@@ -726,12 +763,59 @@ ${modelSummary}${skillSummary}
          </div>`
       : '';
 
+    // 시퀀스 플로우 추출
+    let seqFlowHtml = '';
+    if (mode === 'recommend') {
+      // "A → B" 또는 "A -> B" 패턴 추출
+      const seqMatch = answer.match(/([A-Za-z가-힣\s]+(?:→|->)[A-Za-z가-힣\s→->]+)/);
+      if (seqMatch) {
+        const seqRaw = seqMatch[1];
+        const steps = seqRaw.split(/→|->/).map(s => s.trim()).filter(Boolean);
+        const roles = { 'Perplexity':'정보 수집', 'Claude':'판단·설계', 'Manus':'자율 실행',
+          'Claude Code':'코드 구현', 'ChatGPT':'창작·멀티모달', 'Gemini':'구글 연동',
+          'Genspark':'산출물 제작', 'OpenAI Operator':'웹 실행' };
+        if (steps.length >= 2) {
+          const stepHtml = steps.map((s, i) => {
+            const m = MODELS.find(x => s.includes(x.name));
+            const chipStyle = m ? `onclick="selected=['${m.id}'];renderChips();renderSelBar();renderContent()"` : '';
+            const role = m ? (roles[m.name] || m.tagName) : '';
+            return `<div class="seq-step">
+              <button class="seq-chip" ${chipStyle}>${escHtml(s.replace(/^\d+\.\s*/, ''))}</button>
+              ${role ? `<span class="seq-role">${escHtml(role)}</span>` : ''}
+            </div>${i < steps.length - 1 ? '<span class="seq-arrow">→</span>' : ''}`;
+          }).join('');
+          seqFlowHtml = `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+            <div class="seq-label">추천 순서</div>
+            <div class="seq-flow">${stepHtml}</div>
+          </div>`;
+        }
+      }
+    }
+
+    // 품질 게이트 추출
+    let qualityGateHtml = '';
+    let displayAnswer = answer;
+    if (mode === 'recommend') {
+      const qgMatch = answer.match(/품질 게이트[:：\s]+([^\n]+)/);
+      if (qgMatch) {
+        const gateText = qgMatch[1].trim();
+        const gateItems = gateText.split(/\s*\/\s*/).map(s => s.trim()).filter(Boolean);
+        qualityGateHtml = `<div class="quality-gate">
+          <div class="quality-gate-title">완료 전 확인</div>
+          <ul class="quality-gate-list">${gateItems.map(g => `<li>${escHtml(g)}</li>`).join('')}</ul>
+        </div>`;
+        displayAnswer = answer.replace(/\n?품질 게이트[:：\s]+[^\n]+/, '').trim();
+      }
+    }
+
     area.innerHTML = `<div class="search-result-wrap"><div class="search-result">
       <div style="display:flex;align-items:center;margin-bottom:8px">
         <span class="sr-badge ${badgeClass}">${badgeText}</span>
         ${confBadge}
       </div>
-      <div class="sr-content">${escHtml(answer)}</div>
+      <div class="sr-content">${escHtml(displayAnswer)}</div>
+      ${seqFlowHtml}
+      ${qualityGateHtml}
       ${skillsSection}
       ${modelChips}
       <div class="sr-actions">
