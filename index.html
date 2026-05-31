@@ -1169,5 +1169,281 @@ function renderCompare(models) {
 
 init();
 </script>
+
+<!-- ====================================================
+  배치 설계 섹션
+===================================================== -->
+<style>
+.batch-wrap{max-width:1000px;margin:0 auto;padding:0 14px 80px}
+.batch-toggle-btn{width:100%;background:var(--bg);border:1.5px dashed var(--border);border-radius:var(--r);padding:13px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;text-align:center;margin-bottom:10px;transition:all .15s}
+.batch-toggle-btn:hover{border-color:var(--hint);color:var(--text)}
+.batch-toggle-btn.open{background:var(--surface);border-style:solid;border-color:var(--border);color:var(--text)}
+.batch-section{display:none}
+.batch-section.open{display:block}
+.batch-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:8px}
+.batch-card-head{padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.batch-step-num{width:20px;height:20px;border-radius:50%;background:var(--text);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.batch-card-title{font-size:13px;font-weight:700;color:var(--text)}
+.batch-card-sub{font-size:11px;color:var(--hint);margin-left:4px}
+.batch-card-body{padding:14px 16px}
+.b-tag-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.b-tag{font-size:12px;padding:5px 11px;border-radius:99px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:inherit;transition:all .12s}
+.b-tag.on{background:var(--text);color:#fff;border-color:var(--text)}
+.b-textarea{width:100%;min-height:80px;resize:vertical;font-size:13px;padding:.65rem .75rem;border-radius:var(--rsm);border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;line-height:1.6;outline:none}
+.b-textarea:focus{border-color:var(--blue);background:#fff}
+.b-textarea::placeholder{color:var(--hint);font-size:12px}
+.b-row2{display:grid;grid-template-columns:2fr 1fr;gap:10px}
+.b-label{font-size:11px;color:var(--muted);margin-bottom:5px}
+.b-input{width:100%;font-size:13px;padding:8px 10px;border-radius:var(--rsm);border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;outline:none}
+.b-input:focus{border-color:var(--blue);background:#fff}
+.b-input::placeholder{color:var(--hint);font-size:12px}
+.b-helper{font-size:11px;color:var(--hint);margin-top:6px;line-height:1.5}
+.cp-list{display:flex;flex-direction:column;gap:6px}
+.cp-item{border:1.5px solid var(--border);border-radius:var(--rsm);cursor:pointer;overflow:hidden;transition:border-color .12s}
+.cp-item:hover{border-color:var(--hint)}
+.cp-item.on{border-color:var(--blue)}
+.cp-head{display:flex;align-items:flex-start;gap:10px;padding:11px 13px}
+.cp-dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;margin-top:2px;transition:all .12s}
+.cp-item.on .cp-dot{background:var(--blue);border-color:var(--blue)}
+.cp-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.cp-desc{font-size:11px;color:var(--muted);line-height:1.5}
+.cp-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;margin-top:5px}
+.cp-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-b)}
+.cp-blue{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue)}
+.cp-amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-b)}
+.cp-detail{padding:10px 13px;background:var(--bg);border-top:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.6;display:none}
+.cp-item.on .cp-detail{display:block}
+.batch-btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+.b-btn-reset{font-size:12px;padding:8px 14px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-family:inherit}
+.b-btn-run{font-size:13px;font-weight:700;padding:9px 18px;border-radius:var(--rsm);border:none;background:var(--text);color:#fff;cursor:pointer;font-family:inherit}
+.b-btn-run:disabled{opacity:.4;cursor:not-allowed}
+.batch-result{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-top:8px;display:none}
+.batch-result.show{display:block}
+.br-head{display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.br-title{font-size:13px;font-weight:700;color:var(--text)}
+.br-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px}
+.br-high{background:var(--green-bg);color:var(--green);border:1px solid var(--green-b)}
+.br-mid{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-b)}
+.br-low{background:var(--coral-bg);color:var(--coral);border:1px solid var(--coral-b)}
+.br-stage{background:var(--bg);border-radius:var(--rsm);padding:10px 13px;margin-bottom:6px}
+.br-stage-head{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.br-stage-num{font-size:10px;font-weight:700;background:var(--text);color:#fff;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.br-stage-label{font-size:12px;font-weight:600;color:var(--text)}
+.br-tools{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px}
+.br-tool{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue)}
+.br-tool.python{background:var(--green-bg);color:var(--green);border-color:var(--green-b)}
+.br-tool.llm{background:var(--purple-bg);color:var(--purple);border-color:var(--purple-b)}
+.br-tool.cp-auto{background:var(--green-bg);color:var(--green);border-color:var(--green-b)}
+.br-tool.cp-verify{background:var(--blue-bg);color:var(--blue);border-color:var(--blue)}
+.br-tool.cp-human{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-b)}
+.br-reason{font-size:11px;color:var(--muted);line-height:1.5}
+.br-summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px}
+.br-sum-cell{background:var(--bg);border-radius:var(--rsm);padding:8px 10px;text-align:center}
+.br-sum-label{font-size:10px;color:var(--muted);margin-bottom:3px}
+.br-sum-val{font-size:15px;font-weight:800;color:var(--text)}
+.br-notes{font-size:11px;color:var(--muted);background:var(--bg);border-radius:var(--rsm);padding:9px 12px;margin-top:8px;line-height:1.6}
+@media(max-width:600px){.b-row2{grid-template-columns:1fr}.br-summary{grid-template-columns:1fr 1fr}}
+</style>
+
+<div class="batch-wrap">
+  <button class="batch-toggle-btn" id="batchToggleBtn" onclick="toggleBatch()">
+    ⚙️ 배치 설계 계산 — 최적 도구 조합과 API 호출 횟수를 계산합니다
+  </button>
+  <div class="batch-section" id="batchSection">
+
+    <div class="batch-card">
+      <div class="batch-card-head">
+        <div class="batch-step-num">1</div>
+        <span class="batch-card-title">작업 명세</span>
+      </div>
+      <div class="batch-card-body">
+        <div class="b-tag-row" id="bTagRow">
+          <button class="b-tag" onclick="toggleBTag(this)">문서</button>
+          <button class="b-tag" onclick="toggleBTag(this)">데이터</button>
+          <button class="b-tag" onclick="toggleBTag(this)">검색</button>
+          <button class="b-tag" onclick="toggleBTag(this)">자동화</button>
+          <button class="b-tag" onclick="toggleBTag(this)">코드</button>
+          <button class="b-tag" onclick="toggleBTag(this)">기타</button>
+        </div>
+        <textarea class="b-textarea" id="bTaskDesc" placeholder="예) 엑셀 3개를 하나로 합치고, 그 결과로 워드 보고서 1개를 만들어야 해.&#10;중간에 합쳐진 엑셀 1개가 나오고, 최종 결과물은 워드 파일 1개."></textarea>
+        <p class="b-helper">시작 재료 → 중간 산출물 → 최종 결과물 흐름을 자유롭게 적어주세요.</p>
+      </div>
+    </div>
+
+    <div class="batch-card">
+      <div class="batch-card-head">
+        <div class="batch-step-num">2</div>
+        <span class="batch-card-title">재료 규모</span>
+        <span class="batch-card-sub">선택 — 입력하면 더 정확해요</span>
+      </div>
+      <div class="batch-card-body">
+        <div class="b-row2">
+          <div>
+            <div class="b-label">파일 양식</div>
+            <input type="text" class="b-input" id="bFileFormats" placeholder="예) 엑셀, 워드, PDF" />
+          </div>
+          <div>
+            <div class="b-label">파일 총 개수</div>
+            <input type="text" class="b-input" id="bFileCount" placeholder="예) 5" />
+          </div>
+        </div>
+        <p class="b-helper">파일 양식은 쉼표로 구분해서 적어주세요.</p>
+      </div>
+    </div>
+
+    <div class="batch-card">
+      <div class="batch-card-head">
+        <div class="batch-step-num">3</div>
+        <span class="batch-card-title">중간 산출물 처리 방식</span>
+      </div>
+      <div class="batch-card-body">
+        <div class="cp-list" id="bCpList">
+          <div class="cp-item on" onclick="selectBCP(this)">
+            <div class="cp-head">
+              <div class="cp-dot"></div>
+              <div>
+                <div class="cp-title">자동 통과</div>
+                <div class="cp-desc">중간 결과물을 검토 없이 다음 단계로 바로 넘겨요.</div>
+                <span class="cp-badge cp-green">API 호출 최소</span>
+              </div>
+            </div>
+            <div class="cp-detail">오류가 나도 나중에 최종 결과물에서 잡아낼 수 있을 때 써요. 예) 파일 포맷 변환, 단순 데이터 합치기.</div>
+          </div>
+          <div class="cp-item" onclick="selectBCP(this)">
+            <div class="cp-head">
+              <div class="cp-dot"></div>
+              <div>
+                <div class="cp-title">자동 검증 후 통과</div>
+                <div class="cp-desc">LLM이 중간 결과물을 확인하고 이상 없으면 자동으로 넘어가요.</div>
+                <span class="cp-badge cp-blue">API 호출 +1</span>
+              </div>
+            </div>
+            <div class="cp-detail">중간 결과물 품질이 다음 단계에 영향을 줄 때 써요. 예) 요약 품질 확인, 데이터 누락 체크.</div>
+          </div>
+          <div class="cp-item" onclick="selectBCP(this)">
+            <div class="cp-head">
+              <div class="cp-dot"></div>
+              <div>
+                <div class="cp-title">사람 승인 후 통과</div>
+                <div class="cp-desc">중간 결과물을 사람이 확인하고 승인해야 다음 단계로 넘어가요.</div>
+                <span class="cp-badge cp-amber">대기 시간 발생</span>
+              </div>
+            </div>
+            <div class="cp-detail">판단 분기점이거나 오류가 뒤에서 수정 불가능할 때. 예) 보고서 초안 검토, 분류 결과 확인.</div>
+          </div>
+          <div class="cp-item" onclick="selectBCP(this)">
+            <div class="cp-head">
+              <div class="cp-dot"></div>
+              <div>
+                <div class="cp-title">단계마다 달라요</div>
+                <div class="cp-desc">LLM이 각 단계 성격을 보고 자동/검증/승인을 직접 결정해요.</div>
+                <span class="cp-badge cp-amber">가장 정밀한 설계</span>
+              </div>
+            </div>
+            <div class="cp-detail">단순변환=자동통과, 품질영향=자동검증, 판단분기점=사람승인으로 LLM이 단계별로 최적 방식을 판단해요.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="batch-btn-row">
+      <button class="b-btn-reset" onclick="resetBatch()">초기화</button>
+      <button class="b-btn-run" id="bRunBtn" onclick="runBatchDesign()">배치 설계 계산하기</button>
+    </div>
+    <div class="batch-result" id="batchResult"></div>
+  </div>
+</div>
+
+<script>
+function toggleBatch(){
+  const s=document.getElementById('batchSection');
+  const b=document.getElementById('batchToggleBtn');
+  const isOpen=s.classList.contains('open');
+  s.classList.toggle('open',!isOpen);
+  b.classList.toggle('open',!isOpen);
+  b.textContent=isOpen?'⚙️ 배치 설계 계산 — 최적 도구 조합과 API 호출 횟수를 계산합니다':'⚙️ 배치 설계 닫기';
+  if(!isOpen && lastQuery){
+    document.getElementById('bTaskDesc').value=lastQuery;
+  }
+}
+function toggleBTag(el){el.classList.toggle('on')}
+function selectBCP(el){
+  document.querySelectorAll('#bCpList .cp-item').forEach(i=>i.classList.remove('on'));
+  el.classList.add('on');
+}
+function resetBatch(){
+  document.getElementById('bTaskDesc').value='';
+  document.getElementById('bFileFormats').value='';
+  document.getElementById('bFileCount').value='';
+  document.querySelectorAll('#bTagRow .b-tag').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('#bCpList .cp-item').forEach((item,i)=>item.classList.toggle('on',i===0));
+  const r=document.getElementById('batchResult');
+  r.classList.remove('show');r.innerHTML='';
+}
+async function runBatchDesign(){
+  const taskDesc=document.getElementById('bTaskDesc').value.trim();
+  if(!taskDesc){alert('작업 명세를 입력해주세요.');return;}
+  const taskTypes=[...document.querySelectorAll('#bTagRow .b-tag.on')].map(t=>t.textContent);
+  const fileFormats=document.getElementById('bFileFormats').value.trim();
+  const fileCount=document.getElementById('bFileCount').value.trim();
+  const cpSelected=document.querySelector('#bCpList .cp-item.on .cp-title');
+  const checkpointMode=cpSelected?cpSelected.textContent:'자동 통과';
+  const btn=document.getElementById('bRunBtn');
+  btn.disabled=true;btn.textContent='계산 중...';
+  const result=document.getElementById('batchResult');
+  result.classList.add('show');
+  result.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
+  const systemPrompt=`당신은 AI 작업 설계 전문가입니다. 작업 명세를 분석해서 최적 배치 설계를 반환하세요.
+
+판단 기준:
+- 단순변환/합치기/포맷변경 → Python (API 0번)
+- 요약/분류/작성/분석/검증 → LLM (API 1번)
+
+중간 산출물 처리 방식 규칙:
+- 자동 통과: 모든 중간 단계 = 자동통과
+- 자동 검증 후 통과: 모든 중간 단계 = 자동검증 (API +1)
+- 사람 승인 후 통과: 모든 중간 단계 = 사람승인
+- 단계마다 달라요: 단순변환=자동통과, 품질영향=자동검증, 판단분기점=사람승인
+
+신뢰도:
+- 높음: 작업명세 구체적 + 재료규모 있음
+- 보통(설계): 작업명세 구체적 + 재료규모 없음
+- 보통(비용): 작업명세 모호 + 재료규모 있음
+- 추정값기반: 작업명세 모호 + 재료규모 없음
+
+반드시 JSON만 반환. 다른 텍스트 절대 포함 금지.
+{"stages":[{"step":1,"label":"단계명","input":"입력값","output":"출력값","tools":["도구"],"needs_llm":false,"api_calls":0,"checkpoint":"자동통과","reason":"이유"}],"total_api_calls":1,"estimated_cost":"$0.02","confidence":"높음","confidence_reason":"이유","notes":null}`;
+  const userPrompt=`작업 명세: ${taskDesc}
+작업 유형: ${taskTypes.length>0?taskTypes.join(', '):'미선택'}
+파일 양식: ${fileFormats||'미입력'}
+파일 총 개수: ${fileCount||'미입력'}
+중간 산출물 처리 방식: ${checkpointMode}
+
+최적 배치 설계를 JSON으로 반환해주세요.`;
+  try{
+    const data=await callClaude({model:'claude-sonnet-4-20250514',max_tokens:1500,system:systemPrompt,messages:[{role:'user',content:userPrompt}]});
+    const raw=data.content[0].text.trim().replace(/```json|```/g,'').trim();
+    const json=JSON.parse(raw);
+    renderBatchResult(json);
+  }catch(e){
+    result.innerHTML=`<div style="padding:16px;font-size:13px;color:#A32D2D">오류: ${escHtml(e.message)}</div>`;
+  }
+  btn.disabled=false;btn.textContent='배치 설계 계산하기';
+}
+function renderBatchResult(json){
+  const result=document.getElementById('batchResult');
+  const confClass=json.confidence==='높음'?'br-high':json.confidence?.includes('보통')?'br-mid':'br-low';
+  const stagesHtml=(json.stages||[]).map(s=>{
+    const toolsHtml=(s.tools||[]).map(t=>{
+      const cls=t.toLowerCase().includes('python')||t.toLowerCase().includes('pandas')?'python':s.needs_llm?'llm':'';
+      return `<span class="br-tool ${cls}">${escHtml(t)}</span>`;
+    }).join('');
+    const cpClass=s.checkpoint==='사람승인'?'cp-human':s.checkpoint==='자동검증'?'cp-verify':'cp-auto';
+    return `<div class="br-stage"><div class="br-stage-head"><div class="br-stage-num">${s.step}</div><span class="br-stage-label">${escHtml(s.label||'')}</span></div><div style="font-size:11px;color:var(--muted);margin-bottom:6px">${escHtml(s.input||'')} → ${escHtml(s.output||'')}</div><div class="br-tools">${toolsHtml}<span class="br-tool ${cpClass}">${escHtml(s.checkpoint||'')}</span><span class="br-tool">API ${s.api_calls}회</span></div><div class="br-reason">${escHtml(s.reason||'')}</div></div>`;
+  }).join('');
+  const notesHtml=json.notes?`<div class="br-notes">💡 ${escHtml(json.notes)}</div>`:'';
+  result.innerHTML=`<div class="br-head"><span class="br-title">배치 설계 결과</span><span class="br-badge ${confClass}">${escHtml(json.confidence||'')}</span><span style="font-size:11px;color:var(--hint);margin-left:4px">${escHtml(json.confidence_reason||'')}</span></div>${stagesHtml}<div class="br-summary"><div class="br-sum-cell"><div class="br-sum-label">총 단계</div><div class="br-sum-val">${(json.stages||[]).length}</div></div><div class="br-sum-cell"><div class="br-sum-label">API 호출</div><div class="br-sum-val">${json.total_api_calls}회</div></div><div class="br-sum-cell"><div class="br-sum-label">예상 비용</div><div class="br-sum-val">${escHtml(json.estimated_cost||'-')}</div></div></div>${notesHtml}`;
+}
+</script>
 </body>
 </html>
