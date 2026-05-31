@@ -282,25 +282,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕
         onfocus="expandSearch()" oninput="autoResize(this)"></textarea>
       <div class="search-input-actions">
         <button class="clear-btn" onclick="clearSearch()" title="지우기">✕</button>
-        <button class="search-btn" id="searchBtn" onclick="doSearch()">검색</button>
       </div>
     </div>
-    <div class="search-hint">💡 정리 안 된 내용도 괜찮아요. 길게 붙여넣으면 Claude가 맥락을 파악해서 답변해줍니다.</div>
     <div class="mode-row">
-      <div class="mode-tags">
-        <button class="mode-tag active" id="tag-auto" onclick="setMode('auto')">자동 감지</button>
-        <button class="mode-tag" id="tag-recommend" onclick="setMode('recommend')">추천</button>
-        <button class="mode-tag" id="tag-persona" onclick="setMode('persona')">페르소나</button>
-        <button class="mode-tag" id="tag-free" onclick="setMode('free')">자유 질문</button>
+      <div class="task-type-row" id="sharedTagRow">
+        <button class="task-type-chip" data-type="문서" onclick="toggleSharedTag(this)">문서</button>
+        <button class="task-type-chip" data-type="데이터" onclick="toggleSharedTag(this)">데이터</button>
+        <button class="task-type-chip" data-type="검색" onclick="toggleSharedTag(this)">검색</button>
+        <button class="task-type-chip" data-type="자동화" onclick="toggleSharedTag(this)">자동화</button>
+        <button class="task-type-chip" data-type="코드" onclick="toggleSharedTag(this)">코드</button>
+        <button class="task-type-chip" data-type="기타" onclick="toggleSharedTag(this)">기타</button>
       </div>
-      <div class="task-type-row">
-        <span style="font-size:10px;color:var(--hint);white-space:nowrap">작업 유형:</span>
-        <button class="task-type-chip" data-type="research" onclick="setTaskType('research')">🔍 리서치·조사</button>
-        <button class="task-type-chip" data-type="coding" onclick="setTaskType('coding')">💻 코딩·개발</button>
-        <button class="task-type-chip" data-type="writing" onclick="setTaskType('writing')">📄 문서·글쓰기</button>
-        <button class="task-type-chip" data-type="automation" onclick="setTaskType('automation')">⚡ 자동화·실행</button>
-        <button class="task-type-chip" data-type="data" onclick="setTaskType('data')">📊 데이터 분석</button>
-      </div>
+
     </div>
   </div>
 </div>
@@ -315,6 +308,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕
 <div id="confirmArea"></div>
 <div id="searchResultArea"></div>
 
+<!-- BATCH BTN ROW -->
+<div style="max-width:1000px;margin:0 auto;padding:8px 14px 0;display:flex;gap:8px">
+  <button class="search-btn" id="searchBtn" onclick="doSearch()" style="flex:1;padding:10px">검색</button>
+  <button class="search-btn" id="batchBtn" onclick="openBatchPanel()" style="flex:1;padding:10px;background:var(--surface);color:var(--text);border:1.5px solid var(--border)">⚙️ 배치 설계</button>
+</div>
+
 <!-- BANNER -->
 <div class="banner">
   <div class="banner-inner">
@@ -326,9 +325,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕
   </div>
 </div>
 
-<div class="selbar">
+<div class="selbar" style="display:none">
   <div class="selbar-inner">
-    <div class="selbar-info" id="selInfo">모델을 클릭해서 선택하세요</div>
+    <div class="selbar-info" id="selInfo"></div>
     <button class="clr-btn" onclick="clearSel()">초기화</button>
   </div>
 </div>
@@ -337,7 +336,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕
   <div class="empty">
     <div class="empty-icon">🤖</div>
     <h2>모델을 선택하거나 검색해보세요</h2>
-    <p>검색창: 자연어 질문 → 추천 + 페르소나 설계<br>배너: 모델 클릭 → 단독 상세 / 2~3개 → 비교<br><br>검색 후 모델 클릭 → 해당 모델 작업 적합도 분석</p>
+    <p>검색창에 작업 내용을 입력하고 검색하면 에이전트 추천<br>배치 설계 버튼을 누르면 최적 도구 조합 계산<br><br>모델 클릭 → 단독 상세 / 2~3개 선택 → 비교</p>
   </div>
 </div>
 
@@ -372,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // ── STATE ──
 let MODELS = [];
 let modelMap = {};
-let searchMode = 'auto';
+let searchMode = 'recommend';
 let selected = [];
 let tripleMode = false;
 let lastQuery = '';
@@ -544,11 +543,7 @@ function setTaskType(t) {
 }
 
 function detectMode(q) {
-  if (searchMode !== 'auto') return searchMode;
-  const lq = q.toLowerCase();
-  if (['페르소나', '가정하자', '처럼 생각', '입장에서', '라면 어떻게', '관점으로'].some(k => lq.includes(k))) return 'persona';
-  if (['추천', '어떤 도구', '만들고 싶어', '하고 싶어', '자동화', '구현', '개발', '어떤 에이전트'].some(k => lq.includes(k))) return 'recommend';
-  return 'free';
+  return 'recommend';
 }
 
 // ── HISTORY ──
@@ -1084,7 +1079,9 @@ function clearSel() { selected = []; renderChips(); renderSelBar(); renderConten
 
 function renderSelBar() {
   const el = document.getElementById('selInfo');
-  if (!selected.length) { el.innerHTML = '모델을 클릭해서 선택하세요'; return; }
+  const bar = document.querySelector('.selbar');
+  if (!selected.length) { if(bar) bar.style.display='none'; return; }
+  if(bar) bar.style.display='flex';
   if (selected.length === 1) { const _m = modelMap[selected[0]]; el.innerHTML = `<strong>${_m ? _m.name : selected[0]}</strong> 단독 보기`; return; }
   el.innerHTML = selected.map(id => { const _m = modelMap[id]; return `<strong>${_m ? _m.name : id}</strong>`; }).join(' vs ') + ' 비교 중';
 }
@@ -1246,33 +1243,14 @@ init();
 </style>
 
 <div class="batch-wrap">
-  <button class="batch-toggle-btn" id="batchToggleBtn" onclick="toggleBatch()">
-    ⚙️ 배치 설계 계산 — 최적 도구 조합과 API 호출 횟수를 계산합니다
+  <button class="batch-toggle-btn" id="batchToggleBtn" onclick="toggleBatch()" style="display:none">
+    ⚙️ 배치 설계 닫기
   </button>
   <div class="batch-section" id="batchSection">
 
     <div class="batch-card">
       <div class="batch-card-head">
         <div class="batch-step-num">1</div>
-        <span class="batch-card-title">작업 명세</span>
-      </div>
-      <div class="batch-card-body">
-        <div class="b-tag-row" id="bTagRow">
-          <button class="b-tag" onclick="toggleBTag(this)">문서</button>
-          <button class="b-tag" onclick="toggleBTag(this)">데이터</button>
-          <button class="b-tag" onclick="toggleBTag(this)">검색</button>
-          <button class="b-tag" onclick="toggleBTag(this)">자동화</button>
-          <button class="b-tag" onclick="toggleBTag(this)">코드</button>
-          <button class="b-tag" onclick="toggleBTag(this)">기타</button>
-        </div>
-        <textarea class="b-textarea" id="bTaskDesc" placeholder="예) 엑셀 3개를 하나로 합치고, 그 결과로 워드 보고서 1개를 만들어야 해.&#10;중간에 합쳐진 엑셀 1개가 나오고, 최종 결과물은 워드 파일 1개."></textarea>
-        <p class="b-helper">시작 재료 → 중간 산출물 → 최종 결과물 흐름을 자유롭게 적어주세요.</p>
-      </div>
-    </div>
-
-    <div class="batch-card">
-      <div class="batch-card-head">
-        <div class="batch-step-num">2</div>
         <span class="batch-card-title">재료 규모</span>
         <span class="batch-card-sub">선택 — 입력하면 더 정확해요</span>
       </div>
@@ -1293,7 +1271,7 @@ init();
 
     <div class="batch-card">
       <div class="batch-card-head">
-        <div class="batch-step-num">3</div>
+        <div class="batch-step-num">2</div>
         <span class="batch-card-title">중간 산출물 처리 방식</span>
       </div>
       <div class="batch-card-body">
@@ -1355,35 +1333,46 @@ init();
 </div>
 
 <script>
+function openBatchPanel(){
+  const s=document.getElementById('batchSection');
+  const b=document.getElementById('batchToggleBtn');
+  s.classList.add('open');
+  b.classList.add('open');
+  b.style.display='block';
+  b.textContent='⚙️ 배치 설계 닫기';
+  setTimeout(()=>s.scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
 function toggleBatch(){
   const s=document.getElementById('batchSection');
   const b=document.getElementById('batchToggleBtn');
   const isOpen=s.classList.contains('open');
   s.classList.toggle('open',!isOpen);
   b.classList.toggle('open',!isOpen);
-  b.textContent=isOpen?'⚙️ 배치 설계 계산 — 최적 도구 조합과 API 호출 횟수를 계산합니다':'⚙️ 배치 설계 닫기';
-  if(!isOpen && lastQuery){
-    document.getElementById('bTaskDesc').value=lastQuery;
-  }
+  if(isOpen){b.style.display='none';}
+  b.textContent='⚙️ 배치 설계 닫기';
 }
-function toggleBTag(el){el.classList.toggle('on')}
+function toggleSharedTag(el){
+  el.classList.toggle('active');
+}
+function getSharedTags(){
+  return [...document.querySelectorAll('#sharedTagRow .task-type-chip.active')].map(t=>t.dataset.type);
+}
 function selectBCP(el){
   document.querySelectorAll('#bCpList .cp-item').forEach(i=>i.classList.remove('on'));
   el.classList.add('on');
 }
 function resetBatch(){
-  document.getElementById('bTaskDesc').value='';
   document.getElementById('bFileFormats').value='';
   document.getElementById('bFileCount').value='';
-  document.querySelectorAll('#bTagRow .b-tag').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('#sharedTagRow .task-type-chip').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('#bCpList .cp-item').forEach((item,i)=>item.classList.toggle('on',i===0));
   const r=document.getElementById('batchResult');
   r.classList.remove('show');r.innerHTML='';
 }
 async function runBatchDesign(){
-  const taskDesc=document.getElementById('bTaskDesc').value.trim();
-  if(!taskDesc){alert('작업 명세를 입력해주세요.');return;}
-  const taskTypes=[...document.querySelectorAll('#bTagRow .b-tag.on')].map(t=>t.textContent);
+  const taskDesc=document.getElementById('searchInput').value.trim();
+  if(!taskDesc){alert('검색창에 작업 내용을 입력해주세요.');return;}
+  const taskTypes=getSharedTags();
   const fileFormats=document.getElementById('bFileFormats').value.trim();
   const fileCount=document.getElementById('bFileCount').value.trim();
   const cpSelected=document.querySelector('#bCpList .cp-item.on .cp-title');
