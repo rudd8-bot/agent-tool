@@ -767,10 +767,10 @@ ${modelSummary}${skillSummary}
     let seqFlowHtml = '';
     if (mode === 'recommend') {
       // "A → B" 또는 "A -> B" 패턴 추출
-      const seqMatch = answer.match(/([A-Za-z\uAC00-\uD7A3\s]+(?:\u2192|->)[A-Za-z\uAC00-\uD7A3\s\u2192->]+)/);
+      const seqMatch = answer.match(/([A-Za-z][A-Za-z\s]+(?:->)[A-Za-z\s->]+)/);
       if (seqMatch) {
         const seqRaw = seqMatch[1];
-        const steps = seqRaw.split(/\u2192|->/).map(s => s.trim()).filter(Boolean);
+        const steps = seqRaw.split(/->/).map(s => s.trim()).filter(Boolean);
         const roles = { 'Perplexity':'정보 수집', 'Claude':'판단·설계', 'Manus':'자율 실행',
           'Claude Code':'코드 구현', 'ChatGPT':'창작·멀티모달', 'Gemini':'구글 연동',
           'Genspark':'산출물 제작', 'OpenAI Operator':'웹 실행' };
