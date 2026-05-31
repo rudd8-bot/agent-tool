@@ -317,11 +317,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕
 <!-- BANNER -->
 <div class="banner">
   <div class="banner-inner">
-    <div class="banner-top">
-      <span class="banner-label">모델 선택 (비교)</span>
-      <button class="triple-btn" id="tripleBtn" onclick="toggleTriple()">3개 비교 모드</button>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span class="banner-label" style="flex-shrink:0">모델 선택</span>
+      <div class="chips" id="chips" style="flex:1;min-width:0"></div>
+      <button class="triple-btn" id="tripleBtn" onclick="toggleTriple()" style="flex-shrink:0">3개 비교</button>
     </div>
-    <div class="chips" id="chips"></div>
   </div>
 </div>
 
